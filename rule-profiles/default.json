@@ -1,0 +1,35 @@
+{
+  "id": "default-v1",
+  "targetType": "unknown",
+  "description": "Conservative fallback profile used when the Target/Application Profiler cannot confidently classify the target. Skips checks that assume knowledge of the platform's design system or browser support matrix.",
+
+  "enabledChecks": {
+    "functional": true,
+    "accessibility": true,
+    "responsive": true,
+    "crossBrowser": false,
+    "performance": true,
+    "uiConsistency": false
+  },
+
+  "browsers": ["chromium"],
+
+  "viewports": {
+    "desktop": { "width": 1440, "height": 900 },
+    "tablet":  { "width": 768,  "height": 1024 },
+    "mobile":  { "width": 390,  "height": 844 }
+  },
+
+  "accessibility": { "standard": "WCAG", "level": "AA" },
+
+  "performance": {
+    "enabled": true,
+    "loadTest": {
+      "enabled": false,
+      "approved": false,
+      "users": [10, 100, 500, 1000],
+      "durationSeconds": 60,
+      "thresholds": { "p95ResponseTimeMs": 2000, "errorRatePercent": 1 }
+    }
+  }
+}

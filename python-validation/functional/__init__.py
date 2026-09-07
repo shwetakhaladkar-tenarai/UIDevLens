@@ -1,0 +1,1 @@
+"""Functional UI validators (placeholder)."""

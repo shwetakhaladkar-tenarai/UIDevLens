@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- NOTE: viewport meta is intentionally present so mobile renders,
+       but fixed-width content below still causes horizontal overflow. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flawed Demo Site — Frontend Analyzer Target</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- No <main> landmark, no skip link (intentional a11y issues) -->
+  <header class="site-header">
+    <!-- INTENTIONAL: heading hierarchy jumps h1 -> h3 -->
+    <h1 class="brand">ACME Widgets</h1>
+    <nav>
+      <!-- INTENTIONAL: link with no accessible name (icon only, no aria-label) -->
+      <a href="#" class="icon-link"><span class="icon">☰</span></a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+    </nav>
+  </header>
+
+  <!-- INTENTIONAL: heading level skip (h3 after h1) -->
+  <h3 class="hero-title">Buy more widgets today</h3>
+
+  <!-- INTENTIONAL: oversized image (huge natural dimensions, no width/height,
+       no loading=lazy) + missing alt attribute -->
+  <img class="hero-img" src="/big-image.png" />
+
+  <!-- INTENTIONAL: poor color contrast (light gray on white ~2.3:1) -->
+  <p class="low-contrast">
+    This introductory paragraph uses low-contrast text that fails WCAG AA.
+  </p>
+
+  <section id="features" class="features">
+    <!-- INTENTIONAL: inconsistent card padding + inconsistent gaps -->
+    <div class="card card-a">
+      <h4>Fast</h4>
+      <p class="tiny-text">Widgets ship in 2 days.</p>
+    </div>
+    <div class="card card-b">
+      <h4>Cheap</h4>
+      <p>Best prices guaranteed.</p>
+    </div>
+    <div class="card card-c">
+      <h4>Reliable</h4>
+      <p>99.9% uptime widgets.</p>
+    </div>
+  </section>
+
+  <section id="pricing" class="pricing">
+    <h4 class="odd-font">Pricing</h4>
+
+    <!-- INTENTIONAL: inconsistent button styles / padding / radius -->
+    <button class="btn btn-primary">Buy now</button>
+    <button class="btn btn-secondary">Learn more</button>
+    <button class="btn btn-weird">Contact sales</button>
+
+    <!-- INTENTIONAL: form input with no associated label -->
+    <form class="signup">
+      <input type="email" placeholder="you@example.com" />
+      <button class="btn btn-primary">Subscribe</button>
+    </form>
+  </section>
+
+  <!-- INTENTIONAL: fixed-width block wider than mobile viewport -> horizontal overflow -->
+  <div class="wide-block">
+    This block is 1200px wide and causes horizontal scrolling on mobile.
+  </div>
+
+  <!-- INTENTIONAL: fixtures for the Python functional validators
+       (functional/links.py, buttons.py, forms.py, navigation.py) -->
+  <section id="functional-demo" class="functional-demo">
+    <h4>Functional Demo</h4>
+
+    <nav class="secondary-nav" aria-label="Secondary">
+      <a href="/">Working nav link (home)</a>
+      <a href="/this-page-does-not-exist">Broken nav link</a>
+      <a href="/old-promo">Broken redirect nav link</a>
+    </nav>
+
+    <p>
+      <a href="/this-page-does-not-exist">Broken internal link</a> —
+      <a href="https://example.com/definitely-not-a-real-page-xyz123">Broken external link</a> —
+      <a href="/old-promo">Broken redirect link</a> —
+      <a href="/promo">Working redirect link</a>
+    </p>
+
+    <!-- Safe, WORKING control: reveals a hidden panel (wired up in app.js) -->
+    <button id="reveal-btn" class="btn btn-secondary" aria-expanded="false">Show details</button>
+    <div id="reveal-panel" hidden>Here are some extra widget details.</div>
+
+    <!-- Safe but DEAD control: no handler attached (app.js) -->
+    <button id="dead-btn" class="btn btn-secondary">Refresh data</button>
+
+    <!-- Destructive-looking control: must NEVER be clicked by automation -->
+    <button id="delete-account-btn" class="btn btn-danger">Delete Account</button>
+
+    <form class="contact-form" id="contact-form">
+      <label>
+        Email (required, correctly marked)
+        <input type="email" name="email" required />
+      </label>
+      <label>
+        Full Name * <!-- INTENTIONAL: visually required, but missing `required` attribute -->
+        <input type="text" name="fullName" placeholder="Jane Doe" />
+      </label>
+      <button type="submit" class="btn btn-primary">Send message</button>
+    </form>
+
+    <!-- INTENTIONAL: never resolves/hides -> stuck loading state fixture -->
+    <div class="loading-spinner" aria-busy="true">Loading widget stats…</div>
+
+    <!-- INTENTIONAL: visible on initial load with no user action -> unexpected default error state -->
+    <div class="error-banner" role="alert">Something went wrong loading your dashboard.</div>
+  </section>
+
+  <!-- Layout-shift target: content injected after load pushes things down -->
+  <div id="late-content"></div>
+
+  <footer class="site-footer">
+    <p class="low-contrast">© 2026 ACME Widgets. All rights reserved.</p>
+  </footer>
+
+  <script src="/app.js"></script>
+  <!-- INTENTIONAL: unnecessary large unused script -->
+  <script src="/unused.js"></script>
+</body>
+</html>

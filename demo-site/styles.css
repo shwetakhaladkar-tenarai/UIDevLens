@@ -1,0 +1,65 @@
+/* Demo-site stylesheet — INTENTIONALLY inconsistent to trigger design findings. */
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px;
+  color: #222;
+}
+
+/* INTENTIONAL: mixing font families across the page */
+.brand      { font-family: Georgia, serif; font-size: 28px; font-weight: 700; }
+.hero-title { font-family: "Courier New", monospace; font-size: 41px; font-weight: 400; }
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.site-header nav a { margin-right: 18px; color: #1a3fd8; text-decoration: none; }
+.icon-link .icon { font-size: 20px; }
+
+/* INTENTIONAL: oversized, unconstrained hero image */
+.hero-img { width: 100%; height: auto; }
+
+/* INTENTIONAL: low contrast text (#b8b8b8 on white ≈ 2.3:1, fails AA 4.5:1) */
+.low-contrast { color: #b8b8b8; }
+
+/* INTENTIONAL: odd/too-small font size */
+.tiny-text { font-size: 9px; }
+.odd-font  { font-size: 13.5px; font-family: "Times New Roman", serif; }
+
+/* INTENTIONAL: inconsistent card padding + gaps */
+.features { display: flex; }
+.card      { border: 1px solid #ddd; border-radius: 6px; }
+.card-a    { padding: 8px;  margin-right: 6px; }
+.card-b    { padding: 24px; margin-right: 28px; }   /* different padding + gap */
+.card-c    { padding: 16px; margin-right: 12px; }   /* different again */
+
+/* INTENTIONAL: three buttons with inconsistent style/padding/radius/height */
+.btn { border: none; cursor: pointer; color: #fff; font-size: 14px; }
+.btn-primary   { background: #1a7f37; padding: 10px 18px; border-radius: 6px; }
+.btn-secondary { background: #444;    padding: 6px 10px;  border-radius: 2px; font-size: 12px; }
+.btn-weird     { background: #d97706; padding: 16px 40px; border-radius: 24px; font-size: 17px; }
+
+.signup { margin-top: 16px; }
+.signup input { padding: 8px; border: 1px solid #ccc; }
+
+.functional-demo { margin-top: 24px; }
+.functional-demo .secondary-nav a { margin-right: 14px; }
+.btn-danger { background: #b91c1c; padding: 10px 18px; border-radius: 6px; }
+.contact-form { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; max-width: 320px; }
+.contact-form input { padding: 8px; border: 1px solid #ccc; }
+.loading-spinner { margin-top: 16px; padding: 10px; background: #f3f4f6; }
+.error-banner { margin-top: 8px; padding: 10px; background: #fee2e2; color: #991b1b; }
+
+/* INTENTIONAL: fixed 1200px width => horizontal overflow on 390px mobile */
+.wide-block {
+  width: 1200px;
+  background: #f3f4f6;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.site-footer { margin-top: 40px; border-top: 1px solid #eee; padding-top: 12px; }

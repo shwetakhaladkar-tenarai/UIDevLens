@@ -1,0 +1,1 @@
+"""UI consistency validators (placeholder)."""

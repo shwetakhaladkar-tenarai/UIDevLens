@@ -1,0 +1,11 @@
+# Deterministic Python validation engine.
+# Do not add OpenAI / LangChain / any LLM client here.
+
+# Required for functional/*, accessibility/wcag_validator.py, and
+# responsive/cross_browser_validator.py (real browser automation).
+# After installing, also run once:
+#   python -m playwright install chromium firefox webkit
+playwright>=1.40.0
+
+# responsive/responsive_validator.py, performance/, design/ are still
+# mocked placeholders and need no extra packages yet.
