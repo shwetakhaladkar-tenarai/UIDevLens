@@ -3,12 +3,12 @@
  * Combines findings from all analyzers into a single unified list.
  *
  * Categories: performance | network | design | responsive | accessibility |
- *             functional | ui-consistency
+ *             functional | ui-consistency | cross-browser
  *
- * Unified finding shape:
+ * Unified finding shape (expanded architecture):
  * {
  *   id:          string,
- *   category:    "performance"|"network"|"design"|"responsive"|"accessibility"|"functional"|"ui-consistency",
+ *   category:    "performance"|"network"|"design"|"responsive"|"accessibility"|"functional"|"ui-consistency"|"cross-browser",
  *   severity:    "critical"|"high"|"medium"|"low"|"info",
  *   title:       string,
  *   description: string,
@@ -18,6 +18,13 @@
  *   // preserved passthrough (optional, kept when present):
  *   impact?:     string,
  *   recommendation?: string,
+ *   browser?:    string,   // e.g. "chromium" | "firefox" | "webkit"
+ *   viewport?:   string,   // e.g. "desktop" | "tablet" | "mobile"
+ *   standard?:   string,   // e.g. "WCAG"
+ *   rule?:       string,
+ *   selector?:   string,
+ *   level?:      string,
+ *   threshold?:  number|string,
  * }
  *
  * Pipeline: normalize → dedupe (exact) → merge (closely related) → sort.
@@ -37,6 +44,7 @@ const CATEGORY_ORDER = {
   responsive:    5,
   functional:    6, // sourced from the Python validation engine
   "ui-consistency": 7, // sourced from the Python validation engine (design/ui_consistency.py)
+  "cross-browser": 8, // sourced from the Python validation engine (responsive/cross_browser_validator.py)
 };
 
 const VALID_CATEGORIES = new Set(Object.keys(CATEGORY_ORDER));
@@ -97,16 +105,22 @@ export function normalizeFinding(f = {}, category) {
   else if (f.help)      unified.recommendation = f.help;
 
   // Preserve WCAG-specific structured fields (python-validation/accessibility)
-  // so the conformance standard/level and exact DOM selector survive into
-  // the final report, not just a generic title/evidence blob.
+  // so the conformance standard/level/rule and exact DOM selector survive
+  // into the final report, not just a generic title/evidence blob.
   if (f.standard) unified.standard = f.standard;
   if (f.level)    unified.level = f.level;
+  if (f.rule)     unified.rule = f.rule;
   if (f.selector) unified.selector = f.selector;
 
   // Preserve browser/viewport (python-validation/responsive) so cross-browser
   // and responsive findings stay attributable to exactly where they occurred.
   if (f.browser)  unified.browser = f.browser;
   if (f.viewport) unified.viewport = f.viewport;
+
+  // Preserve the configured threshold a finding violated (e.g. load-benchmark
+  // p95ResponseTimeMs/errorRatePercent) — kept distinct from `evidence` so
+  // consumers can read it without knowing each validator's evidence shape.
+  if (f.threshold !== undefined && f.threshold !== null) unified.threshold = f.threshold;
 
   // Flag findings sourced from a still-mocked validator (e.g. the Python
   // engine's placeholder modules) so consumers can down-weight/label them.
@@ -262,6 +276,7 @@ function sortFindings(findings) {
  * @param {Array}  [buckets.accessibility]
  * @param {Array}  [buckets.functional]   findings from the Python validation engine
  * @param {Array}  [buckets.uiConsistency] findings from design/ui_consistency.py (Python)
+ * @param {Array}  [buckets.crossBrowser]  findings from responsive/cross_browser_validator.py (Python)
  * @param {object} [options]
  * @param {boolean} [options.merge=true]  Merge closely-related findings
  * @returns {Array} unified, sorted findings
@@ -278,6 +293,7 @@ export function combineFindings(buckets = {}, options = {}) {
     ...normalizeFindings(buckets.accessibility,  "accessibility"),
     ...normalizeFindings(buckets.functional,     "functional"),
     ...normalizeFindings(buckets.uiConsistency,  "ui-consistency"),
+    ...normalizeFindings(buckets.crossBrowser,   "cross-browser"),
   ];
 
   // 2. Remove exact duplicates

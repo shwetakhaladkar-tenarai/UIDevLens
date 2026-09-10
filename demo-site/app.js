@@ -19,6 +19,13 @@ fetch("/api/slow").then((r) => r.json()).then(() => {});
 // console_errors.py's failed-request/HTTP-error detection.
 fetch("/api/does-not-exist").catch(() => {});
 
+// INTENTIONAL: missing error state — this request (backing the "Loading
+// widget stats…" spinner in index.html) fails (404), but no error UI is
+// ever shown to the user; the spinner is simply left stuck instead of
+// surfacing the failure. That omission IS the bug being demonstrated —
+// fixture for functional/states.py's stuck-loading detector.
+fetch("/api/widget-stats").catch(() => {});
+
 // INTENTIONAL: cumulative layout shift — inject a tall banner after 800ms,
 // pushing existing content down without reserved space.
 setTimeout(() => {

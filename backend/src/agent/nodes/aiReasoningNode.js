@@ -67,42 +67,129 @@ export async function aiReasoningNode(state) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Evidence summarization — ONLY compact, structured data goes to the model.
 // Explicitly excludes raw DOM, screenshots, full network logs, raw HTML.
+//
+// The model receives exactly: application type, selected rule profile,
+// validation plan, functional findings, WCAG findings, responsive findings,
+// cross-browser differences, frontend performance metrics, approved load
+// benchmark metrics, UI-consistency findings, and the deterministic scores.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MAX_FINDINGS_TO_MODEL = 40;   // cap findings list length
-const MAX_TITLE_LEN         = 120;
+const MAX_FINDINGS_PER_BUCKET = 20;   // cap each findings list length
+const MAX_TITLE_LEN           = 120;
 
 function buildSummarizedEvidence(state) {
-  const scores  = state.scores  ?? {};
-  const metrics = state.metrics ?? {};
-  const findings = state.normalizedFindings ?? [];
+  const findings    = state.normalizedFindings ?? [];
+  const byCategory   = groupByCategory(findings);
 
   return {
     url: state.url ?? "",
 
-    scores: formatScores(scores),
+    applicationType: formatApplicationType(state.targetProfile),
+    ruleProfile:     formatRuleProfile(state.ruleProfile),
+    validationPlan:  formatValidationPlan(state.validationPlan),
 
-    coreWebVitals: formatCoreWebVitals(metrics),
+    scores: formatScores(state.scores),
 
-    lighthouseSummary: formatLighthouse(metrics),
+    functionalFindings:   formatFindingsList(byCategory.functional),
+    wcagFindings:          formatFindingsList(byCategory.accessibility),
+    responsiveFindings:   formatFindingsList(byCategory.responsive),
+    crossBrowserFindings: formatFindingsList(byCategory["cross-browser"]),
+    uiConsistencyFindings: formatFindingsList([...byCategory.design, ...byCategory["ui-consistency"]]),
 
-    networkSummary: formatNetworkSummary(findings, metrics),
-
-    designSummary: formatDesignSummary(state),
-
-    accessibilitySummary: formatA11ySummary(state, findings),
-
-    findings: formatFindings(findings),
+    performanceMetrics:   formatPerformanceMetrics(state),
+    loadBenchmarkMetrics: formatLoadBenchmark(state.pythonValidationResults),
   };
 }
 
+function groupByCategory(findings) {
+  const groups = { functional: [], accessibility: [], responsive: [], "cross-browser": [], design: [], "ui-consistency": [], performance: [], network: [] };
+  for (const f of findings ?? []) {
+    const cat = f?.category;
+    if (cat && cat in groups) groups[cat].push(f);
+  }
+  return groups;
+}
+
+function formatApplicationType(targetProfile) {
+  const tp = targetProfile ?? {};
+  const parts = [
+    `Type: ${tp.targetType ?? "unknown"}`,
+    `Confidence: ${typeof tp.confidence === "number" ? tp.confidence.toFixed(2) : "n/a"}`,
+  ];
+  if (Array.isArray(tp.evidence) && tp.evidence.length) {
+    parts.push(`Evidence: ${tp.evidence.slice(0, 5).join("; ")}`);
+  }
+  return parts.join("\n");
+}
+
+function formatRuleProfile(ruleProfile) {
+  const r = ruleProfile ?? {};
+  const parts = [`Profile: ${r.id ?? "n/a"}`, `Target type: ${r.targetType ?? "n/a"}`];
+  if (r.description) parts.push(`Description: ${r.description}`);
+  if (r.accessibility) {
+    parts.push(`Accessibility standard: ${r.accessibility.standard ?? "n/a"} level ${r.accessibility.level ?? "n/a"}`);
+  }
+  return parts.join("\n");
+}
+
+function formatValidationPlan(plan) {
+  const p = plan ?? {};
+  const checks = p.checks ?? {};
+  const enabled  = Object.entries(checks).filter(([, v]) => v === true).map(([k]) => k);
+  const disabled = Object.entries(checks).filter(([, v]) => v !== true).map(([k]) => k);
+  const parts = [
+    `Enabled checks: ${enabled.length ? enabled.join(", ") : "none"}`,
+    `Disabled checks: ${disabled.length ? disabled.join(", ") : "none"}`,
+    `Browsers: ${(p.browsers ?? []).join(", ") || "n/a"}`,
+    `Viewports: ${(p.viewports ?? []).join(", ") || "n/a"}`,
+  ];
+  if (Array.isArray(p.executionOrder) && p.executionOrder.length) {
+    parts.push(`Execution order: ${p.executionOrder.join(" -> ")}`);
+  }
+  return parts.join("\n");
+}
+
 function formatScores(s) {
+  const scores = s ?? {};
+  const fmt = (v) => (typeof v === "number" ? `${v}/100` : "not run");
   return [
-    `Overall: ${s.overall ?? "n/a"}/100 (${s.label ?? "n/a"})`,
-    `Performance: ${s.performance ?? "n/a"}/100`,
-    `Design: ${s.design ?? "n/a"}/100`,
-    `Accessibility: ${s.accessibility ?? "n/a"}/100`,
+    `Overall: ${typeof scores.overall === "number" ? scores.overall : "n/a"}/100 (${scores.label ?? "n/a"})`,
+    `Functional: ${fmt(scores.functional)}`,
+    `Accessibility: ${fmt(scores.accessibility)}`,
+    `Responsive: ${fmt(scores.responsive)}`,
+    `Cross-Browser: ${fmt(scores.crossBrowser)}`,
+    `Performance: ${fmt(scores.performance)}`,
+    `UI Consistency: ${fmt(scores.uiConsistency)}`,
   ].join("\n");
+}
+
+/** Compact one-line-per-finding list for a single category bucket, capped. */
+function formatFindingsList(findings) {
+  if (!findings?.length) return "None.";
+  return findings
+    .slice(0, MAX_FINDINGS_PER_BUCKET)
+    .map((f) => {
+      const bits = [f.id, f.severity, `conf=${fmtConfidence(f.confidence)}`];
+      if (f.standard) bits.push(f.rule ? `${f.standard}:${f.rule}` : f.standard);
+      if (f.browser)  bits.push(`browser=${f.browser}`);
+      if (f.viewport) bits.push(`viewport=${f.viewport}`);
+      if (f.threshold !== null && f.threshold !== undefined) bits.push(`threshold=${JSON.stringify(f.threshold)}`);
+      const title = String(f.title ?? "").slice(0, MAX_TITLE_LEN);
+      return `${bits.join(" | ")} | ${title}`;
+    })
+    .join("\n") + (findings.length > MAX_FINDINGS_PER_BUCKET
+      ? `\n… (${findings.length - MAX_FINDINGS_PER_BUCKET} more omitted)`
+      : "");
+}
+
+function formatPerformanceMetrics(state) {
+  const m = state.metrics ?? {};
+  const findings = state.normalizedFindings ?? [];
+  const perf = findings.filter((f) => f.category === "performance" || f.category === "network");
+
+  const parts = [formatCoreWebVitals(m), formatLighthouse(m)];
+  parts.push(`Performance/network findings: ${perf.length} (by severity ${JSON.stringify(countBySeverity(perf))})`);
+  return parts.join("\n");
 }
 
 function formatCoreWebVitals(m) {
@@ -134,63 +221,26 @@ function formatLighthouse(m) {
   return parts.length ? parts.join("\n") : "No Lighthouse summary available.";
 }
 
-function formatNetworkSummary(findings, m) {
-  const net = findings.filter((f) => f.category === "network");
-  const parts = [`Network findings: ${net.length}`];
-  if (m.totalRequests != null) parts.push(`Total requests: ${m.totalRequests}`);
-  // Only counts + titles, never full request logs
-  const bySev = countBySeverity(net);
-  parts.push(`By severity: ${JSON.stringify(bySev)}`);
-  return parts.join("\n");
-}
+/**
+ * Approved load-benchmark metrics only — load_benchmark.py never runs
+ * (and thus never produces these) unless the rule profile's
+ * performance.loadTest has both `enabled` and `approved` literally true.
+ */
+function formatLoadBenchmark(pythonValidationResults) {
+  const loadTest = pythonValidationResults?.metrics?.performance?.loadTest;
+  if (!loadTest) return "Not run.";
+  if (!loadTest.executed) return `Not executed (${loadTest.reason ?? "not enabled/approved"}).`;
 
-function formatDesignSummary(state) {
-  const findings = state.normalizedFindings ?? [];
-  const design     = findings.filter((f) => f.category === "design");
-  const responsive = findings.filter((f) => f.category === "responsive");
-  const de = state.browserEvidence?.designEvidence ?? {};
+  const results = loadTest.results ?? {};
+  const rows = Object.entries(results).map(([users, rm]) =>
+    `${users} users: p95=${rm.p95ResponseTimeMs ?? "n/a"}ms, errorRate=${rm.errorRatePercent ?? "n/a"}%, errors=${rm.errorCount ?? "n/a"}`
+  );
 
-  const parts = [
-    `Design findings: ${design.length} (severity ${JSON.stringify(countBySeverity(design))})`,
-    `Responsive findings: ${responsive.length} (severity ${JSON.stringify(countBySeverity(responsive))})`,
-  ];
-  // Aggregate statistics only — never raw element dumps
-  if (de.typography) {
-    const fam = new Set((de.typography.body ?? []).concat(de.typography.headings ?? []).map((t) => t.fontFamily)).size;
-    const sizes = new Set((de.typography.body ?? []).map((t) => t.fontSize)).size;
-    parts.push(`Typography: ~${fam} font families, ~${sizes} body font sizes sampled`);
-  }
-  if (de.components) {
-    parts.push(`Components sampled: ${(de.components.buttons ?? []).length} buttons, ${(de.components.inputs ?? []).length} inputs, ${(de.components.cards ?? []).length} cards`);
-  }
-  return parts.join("\n");
-}
-
-function formatA11ySummary(state, findings) {
-  const a11y = findings.filter((f) => f.category === "accessibility");
-  const parts = [
-    `Accessibility (axe) score: ${state.accessibilityAxeScore ?? "n/a"}/100`,
-    `Accessibility findings: ${a11y.length} (severity ${JSON.stringify(countBySeverity(a11y))})`,
-  ];
-  // List distinct axe rules only (short), not full node dumps
-  const rules = [...new Set(a11y.map((f) => f.evidence?.axeRule).filter(Boolean))].slice(0, 15);
-  if (rules.length) parts.push(`axe rules: ${rules.join(", ")}`);
-  return parts.join("\n");
-}
-
-/** Compact one-line-per-finding list, capped and truncated. */
-function formatFindings(findings) {
-  if (!findings.length) return "No findings.";
-  return findings
-    .slice(0, MAX_FINDINGS_TO_MODEL)
-    .map((f) => {
-      const title = String(f.title ?? "").slice(0, MAX_TITLE_LEN);
-      const conf  = typeof f.confidence === "number" ? f.confidence.toFixed(2) : "?";
-      return `${f.id} | ${f.category} | ${f.severity} | conf=${conf} | ${title}`;
-    })
-    .join("\n") + (findings.length > MAX_FINDINGS_TO_MODEL
-      ? `\n… (${findings.length - MAX_FINDINGS_TO_MODEL} more findings omitted)`
-      : "");
+  return [
+    `Duration requested: ${loadTest.durationSecondsRequested ?? "n/a"}s`,
+    `Thresholds: ${JSON.stringify(loadTest.thresholds ?? {})}`,
+    ...rows,
+  ].join("\n");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -207,14 +257,19 @@ function buildFallbackAnalysis(state, reason) {
     (a, b) => severityRank(b.severity) - severityRank(a.severity)
   );
   const top = findings.slice(0, 5);
+  const byCategory = groupByCategory(findings);
+  const majorRisks = findings
+    .filter((f) => f.severity === "critical" || f.severity === "high")
+    .slice(0, 5)
+    .map((f) => f.title)
+    .filter(Boolean);
 
   return {
     executiveSummary:
-      `Automated analysis of ${state.url} scored ${scores.overall ?? "n/a"}/100 overall ` +
-      `(performance ${scores.performance ?? "n/a"}, design ${scores.design ?? "n/a"}, ` +
-      `accessibility ${scores.accessibility ?? "n/a"}). ` +
-      `${findings.length} findings were detected. ` +
+      `Automated analysis of ${state.url} scored ${fmtScore(scores.overall)}/100 overall. ` +
+      `${findings.length} findings were detected across the enabled validation categories. ` +
       `AI narrative was unavailable (${reason}); this summary is generated deterministically from analyzer results.`,
+    majorRisks,
     prioritizedIssues: top.map((f, i) => ({
       findingId:       f.id,
       priority:        i + 1,
@@ -224,6 +279,9 @@ function buildFallbackAnalysis(state, reason) {
       impact:          severityToImpact(f.severity),
       effort:          "medium",
     })),
+    crossBrowserSummary:  summarizeCategoryFallback(byCategory["cross-browser"], scores.crossBrowser),
+    accessibilitySummary: summarizeCategoryFallback(byCategory.accessibility, scores.accessibility),
+    performanceSummary:   summarizeCategoryFallback([...byCategory.performance, ...byCategory.network], scores.performance),
     quickWins: findings
       .filter((f) => f.severity === "low" || f.severity === "medium")
       .slice(0, 5)
@@ -236,6 +294,16 @@ function buildFallbackAnalysis(state, reason) {
     _mocked: true,
     _fallbackReason: reason,
   };
+}
+
+/** Deterministic one-line category summary used only by the fallback path. */
+function summarizeCategoryFallback(findings, score) {
+  if (score && typeof score === "object" && score.status === "not-run") {
+    return "Not run for this analysis.";
+  }
+  const scoreStr = typeof score === "number" ? `${score}/100` : "n/a";
+  if (!findings?.length) return `No findings detected. Score: ${scoreStr}.`;
+  return `${findings.length} finding(s) detected (severity ${JSON.stringify(countBySeverity(findings))}). Score: ${scoreStr}.`;
 }
 
 /** Mark a partially-valid AI result so downstream knows it wasn't fully clean. */
@@ -261,6 +329,14 @@ function severityToImpact(s) {
   if (s === "critical" || s === "high") return "high";
   if (s === "medium") return "medium";
   return "low";
+}
+
+function fmtScore(v) {
+  return typeof v === "number" ? v : "n/a";
+}
+
+function fmtConfidence(v) {
+  return typeof v === "number" ? v.toFixed(2) : "?";
 }
 
 function fmtBytes(b) {

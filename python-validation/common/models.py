@@ -23,11 +23,12 @@ class Severity(str, Enum):
 
 
 class Category(str, Enum):
-    FUNCTIONAL    = "functional"
-    ACCESSIBILITY = "accessibility"
-    RESPONSIVE    = "responsive"
-    PERFORMANCE   = "performance"
-    DESIGN        = "design"
+    FUNCTIONAL     = "functional"
+    ACCESSIBILITY  = "accessibility"
+    RESPONSIVE     = "responsive"
+    CROSS_BROWSER  = "cross-browser"
+    PERFORMANCE    = "performance"
+    UI_CONSISTENCY = "ui-consistency"
 
 
 class CheckType(str, Enum):
@@ -44,7 +45,14 @@ class CheckType(str, Enum):
 
 @dataclass
 class Finding:
-    """A single deterministic validation finding.  No AI content here."""
+    """
+    A single deterministic validation finding. No AI content here.
+
+    Canonical shape (every field below is always present on to_dict(),
+    None when not applicable to this finding):
+      id, category, severity, title, description, evidence, confidence,
+      source, browser, viewport, standard, rule, threshold
+    """
     id:             str
     category:       str          # Category enum value
     severity:       str          # Severity enum value
@@ -55,6 +63,12 @@ class Finding:
     confidence:     float        = 1.0   # 0-1, based on measurement certainty
     source:         str          = ""    # e.g. "links", "wcag_validator"
     mocked:         bool         = False # True while real validation not yet implemented
+    # Expanded-architecture fields — all optional, None when not applicable.
+    browser:        str | None   = None  # e.g. "chromium" | "firefox" | "webkit"
+    viewport:       str | None   = None  # e.g. "desktop" | "tablet" | "mobile"
+    standard:       str | None   = None  # e.g. "WCAG"
+    rule:           str | None   = None  # e.g. "WCAG 1.1.1 Non-text Content"
+    threshold:      Any | None   = None  # the configured threshold this finding violated
 
     def to_dict(self) -> dict:
         return asdict(self)

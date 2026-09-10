@@ -29,8 +29,6 @@ function baseEvidence(overrides = {}) {
       generator: null,
       customElementTags: [],
       hasPowerBiEmbedMarkers: false,
-      hasTableauEmbedMarkers: false,
-      hasDatabricksMarkers: false,
     },
     ...overrides,
   };
@@ -39,7 +37,7 @@ function baseEvidence(overrides = {}) {
 test("SUPPORTED_TARGET_TYPES matches the required set", () => {
   assert.deepEqual(
     [...SUPPORTED_TARGET_TYPES].sort(),
-    ["databricks", "powerbi", "standard-web", "tableau", "unknown"].sort()
+    ["powerbi", "standard-web", "unknown"].sort()
   );
 });
 
@@ -61,8 +59,6 @@ test("classifies a plain React site as standard-web with high confidence", () =>
   assert.ok(result.confidence >= 0.9, `expected high confidence, got ${result.confidence}`);
   assert.ok(result.evidence.some((e) => /React root detected/.test(e)));
   assert.ok(result.evidence.some((e) => /No Power BI embed signatures found/.test(e)));
-  assert.ok(result.evidence.some((e) => /No Tableau embed signatures found/.test(e)));
-  assert.ok(result.evidence.some((e) => /No Databricks embed signatures found/.test(e)));
 });
 
 test("classifies a bare document with some content as standard-web", () => {
@@ -102,58 +98,6 @@ test("classifies an embedded Power BI iframe on a third-party host by iframe src
   const result = profileApplication(evidence);
   assert.equal(result.targetType, "powerbi");
   assert.ok(result.confidence >= 0.7);
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tableau
-// ─────────────────────────────────────────────────────────────────────────────
-
-test("classifies a Tableau Public view by domain + script with very high confidence", () => {
-  const evidence = baseEvidence({
-    url: "https://public.tableau.com/views/MyDashboard/Sheet1",
-    finalUrl: "https://public.tableau.com/views/MyDashboard/Sheet1",
-    domain: "public.tableau.com",
-    meta: { title: "MyDashboard - Tableau Public" },
-    resources: { scriptUrls: ["https://public.tableau.com/javascripts/api/tableau-2.min.js"] },
-  });
-
-  const result = profileApplication(evidence);
-
-  assert.equal(result.targetType, "tableau");
-  assert.ok(result.confidence >= 0.9, `expected very high confidence, got ${result.confidence}`);
-  assert.ok(result.evidence.some((e) => /Domain matches Tableau/.test(e)));
-});
-
-test("classifies a page using the <tableau-viz> custom element", () => {
-  const evidence = baseEvidence({
-    domain: "dashboards.example.com",
-    meta: { title: "Internal Dashboards" },
-    appSignatures: {
-      ...baseEvidence().appSignatures,
-      hasTableauEmbedMarkers: true,
-      customElementTags: ["tableau-viz"],
-    },
-  });
-
-  const result = profileApplication(evidence);
-  assert.equal(result.targetType, "tableau");
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Databricks (bonus coverage — same mechanism as powerbi/tableau)
-// ─────────────────────────────────────────────────────────────────────────────
-
-test("classifies a Databricks workspace by domain", () => {
-  const evidence = baseEvidence({
-    url: "https://my-workspace.cloud.databricks.com/?o=123#notebook/456",
-    finalUrl: "https://my-workspace.cloud.databricks.com/?o=123#notebook/456",
-    domain: "my-workspace.cloud.databricks.com",
-    meta: { title: "Databricks - Notebook" },
-  });
-
-  const result = profileApplication(evidence);
-  assert.equal(result.targetType, "databricks");
-  assert.ok(result.confidence >= 0.9);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

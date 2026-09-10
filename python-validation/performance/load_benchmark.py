@@ -57,7 +57,7 @@ USER_AGENT = "FrontendQualityAnalyzer-LoadBenchmark/1.0"
 
 
 def _finding(finding_id: str, severity: str, title: str, description: str,
-             recommendation: str, evidence: dict, confidence: float) -> Finding:
+             recommendation: str, evidence: dict, confidence: float, threshold=None) -> Finding:
     return Finding(
         id=finding_id,
         category="performance",
@@ -68,6 +68,7 @@ def _finding(finding_id: str, severity: str, title: str, description: str,
         recommendation=recommendation,
         confidence=confidence,
         source="python-load-benchmark",
+        threshold=threshold,
     )
 
 
@@ -154,6 +155,7 @@ def check_thresholds(user_count: int, metrics: dict, thresholds: dict) -> list[F
             "pool sizing, and autoscaling configuration are common culprits.",
             {"userCount": user_count, "p95ResponseTimeMs": p95, "thresholdMs": p95_threshold},
             0.9,
+            threshold=p95_threshold,
         ))
 
     error_threshold = thresholds.get("errorRatePercent")
@@ -169,6 +171,7 @@ def check_thresholds(user_count: int, metrics: dict, thresholds: dict) -> list[F
             "server errors (5xx) under concurrency are common causes.",
             {"userCount": user_count, "errorRatePercent": rate, "thresholdPercent": error_threshold, "errorCount": metrics["errorCount"]},
             0.9,
+            threshold=error_threshold,
         ))
 
     return findings

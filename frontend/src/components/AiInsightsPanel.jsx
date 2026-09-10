@@ -1,76 +1,112 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 const LEVEL_STYLES = {
-  low:    "bg-green-500/20 text-green-400 border-green-500/30",
-  medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  high:   "bg-red-500/20 text-red-400 border-red-500/30",
+  low:    "bg-green-50 text-green-700 border-green-200",
+  medium: "bg-amber-50 text-amber-700 border-amber-200",
+  high:   "bg-red-50 text-red-700 border-red-200",
 };
 
 function levelClass(v) {
-  return LEVEL_STYLES[String(v || "").toLowerCase()] ?? "bg-gray-500/20 text-gray-400 border-gray-500/30";
+  return LEVEL_STYLES[String(v || "").toLowerCase()] ?? "bg-gray-100 text-gray-600 border-gray-200";
 }
 
-export default function AiInsightsPanel({ aiAnalysis }) {
-  if (!aiAnalysis) return null;
+/**
+ * AI Summary — advisory narrative ONLY. All of this is grounded in the
+ * deterministic evidence shown elsewhere on the dashboard (Functional UI,
+ * Accessibility, Responsive Matrix, Cross-Browser, Performance, UI
+ * Consistency panels + the full Issues table) — this panel never
+ * substitutes for that evidence, only summarizes and prioritizes it.
+ *
+ * `prioritizedIssues` is derived from `issues[].ai` (reportBuilder.js joins
+ * the LLM's per-finding annotation onto each factual finding by id) rather
+ * than a separate list, so every prioritized issue here is traceable back
+ * to a real finding.
+ */
+export default function AiInsightsPanel({
+  executiveSummary,
+  majorRisks = [],
+  issues = [],
+  quickWins = [],
+  recommendations = [],
+  aiMeta = {},
+}) {
+  const prioritizedIssues = useMemo(() => {
+    return issues
+      .filter((i) => i.ai)
+      .sort((a, b) => (a.ai.priority ?? Infinity) - (b.ai.priority ?? Infinity))
+      .map((i) => ({ findingId: i.id, title: i.title, ...i.ai }));
+  }, [issues]);
 
-  const {
-    executiveSummary,
-    prioritizedIssues = [],
-    quickWins = [],
-    recommendations = [],
-    _mocked,
-    _partial,
-    _fallbackReason,
-  } = aiAnalysis;
+  const hasContent = executiveSummary || majorRisks.length || prioritizedIssues.length || quickWins.length || recommendations.length;
+  if (!hasContent) return null;
 
-  const badge = _mocked ? "Deterministic" : _partial ? "Partial (AI)" : "GPT-4o";
+  const { available = true, partial = false, fallbackReason = null } = aiMeta;
+  const badge = !available ? "Deterministic" : partial ? "Partial (AI)" : "GPT-4o Inference";
 
   return (
     <section aria-labelledby="ai-heading" className="space-y-6">
       <div className="flex items-center gap-3">
-        <h2 id="ai-heading" className="text-base font-semibold text-white">
-          AI Analysis
+        <h2 id="ai-heading" className="text-base font-semibold text-gray-900">
+          AI Root Cause &amp; Fixes
         </h2>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
-          🤖 {badge}
+        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+          <span aria-hidden="true">🤖</span> {badge}
         </span>
       </div>
 
       {/* Fallback notice */}
-      {_mocked && _fallbackReason && (
-        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3">
-          <p className="text-xs text-yellow-400">
-            AI narrative unavailable — showing deterministic analysis. ({_fallbackReason})
+      {!available && fallbackReason && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <p className="text-xs text-amber-800">
+            AI reasoning unavailable — showing a deterministic summary instead. ({fallbackReason})
           </p>
         </div>
       )}
 
       {/* Executive summary */}
       {executiveSummary && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <p className="text-xs font-medium text-gray-400 mb-2">Executive Summary</p>
-          <p className="text-sm text-gray-200 leading-relaxed">{executiveSummary}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <p className="text-xs font-semibold text-purple-700 mb-2">Executive Summary</p>
+          <p className="text-sm text-gray-700 leading-relaxed">{executiveSummary}</p>
         </div>
       )}
 
-      {/* Prioritized issues */}
+      {/* Major risks */}
+      {majorRisks.length > 0 && (
+        <div className="bg-red-50/60 border border-red-200 rounded-xl p-4">
+          <h3 className="text-sm font-medium text-red-700 mb-2"><span aria-hidden="true">⚠</span> Major Risks</h3>
+          <ul className="space-y-1.5">
+            {majorRisks.map((risk, i) => (
+              <li key={i} className="flex gap-2 text-xs text-gray-700">
+                <span className="text-red-500 shrink-0" aria-hidden="true">•</span>
+                {risk}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Prioritized issues (with likely root cause + recommendation) */}
       {prioritizedIssues.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-gray-300 mb-3">Prioritized Issues</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Prioritized Issues</h3>
           <ol className="space-y-3">
             {prioritizedIssues.map((issue, i) => (
               <li
                 key={`${issue.findingId || "issue"}-${issue.priority ?? i}`}
-                className="bg-gray-900 border border-gray-800 rounded-xl p-4"
+                className="bg-white border border-gray-200 rounded-xl p-4"
               >
                 <div className="flex items-start gap-3">
-                  <span className="text-xs font-bold text-gray-600 w-6 shrink-0 pt-0.5">
+                  <span className="text-xs font-bold text-gray-400 w-6 shrink-0 pt-0.5">
                     #{issue.priority ?? i + 1}
                   </span>
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
+                      {issue.title && <p className="text-sm font-medium text-gray-900">{issue.title}</p>}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
                       {issue.findingId && (
-                        <code className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">
+                        <code className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
                           {issue.findingId}
                         </code>
                       )}
@@ -82,20 +118,20 @@ export default function AiInsightsPanel({ aiAnalysis }) {
                       </span>
                     </div>
                     {issue.reason && (
-                      <p className="text-xs text-gray-400">
-                        <span className="font-medium text-gray-300">Why: </span>
+                      <p className="text-xs text-gray-500">
+                        <span className="font-medium text-gray-700">Why: </span>
                         {issue.reason}
                       </p>
                     )}
                     {issue.likelyRootCause && (
-                      <p className="text-xs text-gray-400">
-                        <span className="font-medium text-gray-300">Likely cause: </span>
+                      <p className="text-xs text-gray-500">
+                        <span className="font-medium text-gray-700">Likely cause: </span>
                         {issue.likelyRootCause}
                       </p>
                     )}
                     {issue.recommendation && (
-                      <p className="text-xs text-gray-400">
-                        <span className="font-medium text-gray-300">Fix: </span>
+                      <p className="text-xs text-gray-500">
+                        <span className="font-medium text-gray-700">Fix: </span>
                         {issue.recommendation}
                       </p>
                     )}
@@ -110,12 +146,12 @@ export default function AiInsightsPanel({ aiAnalysis }) {
       {/* Quick Wins + Recommendations */}
       <div className="grid sm:grid-cols-2 gap-4">
         {quickWins.length > 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-            <h3 className="text-sm font-medium text-green-400 mb-3">⚡ Quick Wins</h3>
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <h3 className="text-sm font-medium text-green-700 mb-3"><span aria-hidden="true">⚡</span> Quick Wins</h3>
             <ul className="space-y-2">
               {quickWins.map((win, i) => (
-                <li key={i} className="flex gap-2 text-xs text-gray-300">
-                  <span className="text-green-400 shrink-0">✓</span>
+                <li key={i} className="flex gap-2 text-xs text-gray-700">
+                  <span className="text-green-600 shrink-0" aria-hidden="true">✓</span>
                   {win}
                 </li>
               ))}
@@ -124,12 +160,12 @@ export default function AiInsightsPanel({ aiAnalysis }) {
         )}
 
         {recommendations.length > 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-            <h3 className="text-sm font-medium text-blue-400 mb-3">📋 Recommendations</h3>
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <h3 className="text-sm font-medium text-blue-700 mb-3"><span aria-hidden="true">📋</span> Recommendations</h3>
             <ul className="space-y-2">
               {recommendations.map((rec, i) => (
-                <li key={i} className="flex gap-2 text-xs text-gray-300">
-                  <span className="text-blue-400 shrink-0">•</span>
+                <li key={i} className="flex gap-2 text-xs text-gray-700">
+                  <span className="text-blue-600 shrink-0" aria-hidden="true">•</span>
                   {rec}
                 </li>
               ))}

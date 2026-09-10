@@ -21,6 +21,7 @@ export async function analyzeUrl(url, { signal } = {}) {
   try {
     res = await fetch(`${API_BASE_URL}/api/analyze`, {
       method: "POST",
+      credentials: "include", // sends the session cookie — this route requires auth (server.js)
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url }),
       signal,
@@ -41,7 +42,9 @@ export async function analyzeUrl(url, { signal } = {}) {
   }
 
   if (!res.ok || !json.success) {
-    throw new Error(json?.error || `Server error (HTTP ${res.status}).`);
+    const err = new Error(json?.error || `Server error (HTTP ${res.status}).`);
+    err.status = res.status;
+    throw err;
   }
 
   // Controller wraps the report as { success, elapsedMs, data }

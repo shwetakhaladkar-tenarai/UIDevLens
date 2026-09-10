@@ -563,8 +563,8 @@ async function extractDomData(page, cfg) {
         });
       });
 
-      // Iframes — embedded BI/report platforms (Power BI, Tableau, etc.) are
-      // almost always surfaced through an <iframe src="..."> embed.
+      // Iframes — embedded BI/report platforms (e.g. Power BI) are almost
+      // always surfaced through an <iframe src="..."> embed.
       const iframes = [];
       document.querySelectorAll("iframe").forEach((f) => {
         if (iframes.length >= maxPerType) return;
@@ -604,15 +604,6 @@ async function extractDomData(page, cfg) {
           document.querySelector('[class*="powerbi-embed"]') ||
           document.querySelector("#reportContainer") ||
           document.querySelector("[data-embed-type]")
-        ),
-        hasTableauEmbedMarkers: !!(
-          document.querySelector("tableau-viz") ||
-          document.querySelector('[class*="tableauViz"]') ||
-          document.querySelector('object[class*="tableauViz"]')
-        ),
-        hasDatabricksMarkers: !!(
-          document.querySelector('[class*="dbc-"]') ||
-          document.querySelector("#notebook-content")
         ),
       };
 

@@ -31,7 +31,7 @@ from common.models import RunnerInput, RunnerOutput, ValidationResult
 from common.normalization import flatten_results
 from design import ui_consistency
 from functional import buttons, console_errors, forms, links, navigation, states
-from performance import frontend_metrics, load_benchmark
+from performance import load_benchmark
 from responsive import cross_browser_validator, responsive_validator
 
 log = get_logger("python-validation.runner")
@@ -50,7 +50,11 @@ CHECK_VALIDATORS: dict[str, list[ValidatorFn]] = {
     "accessibility": [wcag_validator.validate],
     "responsive": [responsive_validator.validate],
     "cross_browser": [cross_browser_validator.validate],
-    "performance": [frontend_metrics.validate, load_benchmark.validate],
+    # Frontend performance metrics (LCP/CLS/etc.) are deliberately NOT
+    # duplicated here — Node's performanceAnalyzerNode already collects them
+    # for real via Lighthouse. This engine's "performance" check group is
+    # just the opt-in, two-factor-gated load benchmark.
+    "performance": [load_benchmark.validate],
     "design": [ui_consistency.validate],
 }
 

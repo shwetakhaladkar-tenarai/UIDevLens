@@ -4,7 +4,7 @@
  * web-accessible application is being analyzed, BEFORE rule-profile
  * selection and validation run.
  *
- * Supported target types: standard-web | powerbi | tableau | databricks | unknown
+ * Supported target types: standard-web | powerbi | unknown
  *
  * Purely deterministic: inspects URL/domain, page title, DOM signatures,
  * script/resource URLs, iframe sources, framework markers, and known
@@ -13,7 +13,7 @@
  * (optionally) resolve with AI assistance.
  */
 
-export const SUPPORTED_TARGET_TYPES = ["standard-web", "powerbi", "tableau", "databricks", "unknown"];
+export const SUPPORTED_TARGET_TYPES = ["standard-web", "powerbi", "unknown"];
 
 // A best-scoring embed candidate below this is not a real signal at all.
 const AMBIGUOUS_SCORE_THRESHOLD = 10;
@@ -48,32 +48,6 @@ const EMBED_SIGNALS = {
     sig(15, "Power BI embed container markers found in the DOM", (e) => e.appSignatures.hasPowerBiEmbedMarkers),
     sig(10, "Page title mentions Power BI", (e) => /power\s*bi/i.test(e.title)),
   ],
-  tableau: [
-    sig(40, "Domain matches Tableau (public.tableau.com / tableau.com)", (e) =>
-      /(^|\.)public\.tableau\.com$/i.test(e.domain) || /(^|\.)(online\.)?tableau\.com$/i.test(e.domain)
-    ),
-    sig(35, "Iframe source points to a Tableau view", (e) =>
-      e.iframeSrcs.some((src) => /tableau\.com/i.test(src) || /\/views\//i.test(src))
-    ),
-    sig(20, "Script source loads the Tableau embedding API", (e) =>
-      e.scriptUrls.some((src) => /tableau.*(api|javascripts)/i.test(src))
-    ),
-    sig(35, "<tableau-viz> custom element or .tableauViz container found", (e) =>
-      e.appSignatures.hasTableauEmbedMarkers || e.appSignatures.customElementTags.includes("tableau-viz")
-    ),
-    sig(10, "Page title mentions Tableau", (e) => /tableau/i.test(e.title)),
-  ],
-  databricks: [
-    sig(40, "Domain matches a Databricks workspace", (e) =>
-      /(^|\.)cloud\.databricks\.com$/i.test(e.domain) ||
-      /(^|\.)azuredatabricks\.net$/i.test(e.domain) ||
-      /(^|\.)gcp\.databricks\.com$/i.test(e.domain)
-    ),
-    sig(30, "Iframe source points to a Databricks embed", (e) => e.iframeSrcs.some((src) => /databricks/i.test(src))),
-    sig(15, "Script source references Databricks assets", (e) => e.scriptUrls.some((src) => /databricks/i.test(src))),
-    sig(15, "Databricks notebook/dashboard DOM markers found", (e) => e.appSignatures.hasDatabricksMarkers),
-    sig(10, "Page title mentions Databricks", (e) => /databricks/i.test(e.title)),
-  ],
 };
 
 // ── Generic "ordinary website" signatures (used only once no embed platform matches) ──
@@ -89,8 +63,6 @@ const STANDARD_WEB_SIGNALS = [
 
 const NEGATIVE_EVIDENCE_LABEL = {
   powerbi: "No Power BI embed signatures found",
-  tableau: "No Tableau embed signatures found",
-  databricks: "No Databricks embed signatures found",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,8 +110,6 @@ function normalizeEvidence(raw = {}) {
     generator: null,
     customElementTags: [],
     hasPowerBiEmbedMarkers: false,
-    hasTableauEmbedMarkers: false,
-    hasDatabricksMarkers: false,
     ...(raw.appSignatures || {}),
   };
 
@@ -195,9 +165,7 @@ export function profileApplication(rawEvidence = {}) {
   const evidence = normalizeEvidence(rawEvidence);
 
   const candidates = {
-    powerbi:    scoreCandidate(evidence, EMBED_SIGNALS.powerbi),
-    tableau:    scoreCandidate(evidence, EMBED_SIGNALS.tableau),
-    databricks: scoreCandidate(evidence, EMBED_SIGNALS.databricks),
+    powerbi: scoreCandidate(evidence, EMBED_SIGNALS.powerbi),
   };
 
   const [bestType, bestResult] = Object.entries(candidates).sort((a, b) => b[1].score - a[1].score)[0];

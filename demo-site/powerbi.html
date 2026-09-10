@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- INTENTIONAL: title mentions "Power BI" — one of applicationProfiler.js's
+       real classification signals (see backend/src/profiling/applicationProfiler.js). -->
+  <title>Sales Dashboard — Power BI Embed Demo</title>
+  <style>
+    :root { color-scheme: light; }
+    body {
+      font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 20px 60px;
+      color: #1f2937;
+      background: #f8fafc;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 24px;
+    }
+    header h1 { font-size: 20px; margin: 0; }
+    header nav a {
+      margin-left: 20px;
+      color: #2563eb;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    header nav a:hover { text-decoration: underline; }
+    p.lede { color: #475569; max-width: 640px; line-height: 1.6; }
+    /* INTENTIONAL: real Power BI embed CSS class — one of the DOM markers
+       applicationProfiler.js checks for (see browserCollector.js's
+       hasPowerBiEmbedMarkers). */
+    .powerbi-embed {
+      margin-top: 20px;
+      min-height: 420px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px;
+    }
+    .placeholder-icon { font-size: 40px; margin-bottom: 12px; }
+    .placeholder-title { font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 8px; }
+    .placeholder-text { font-size: 14px; color: #64748b; max-width: 440px; margin: 0 auto; line-height: 1.6; }
+    .status-pill {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-pill.ok    { background: #dcfce7; color: #166534; }
+    .status-pill.pending { background: #fef9c3; color: #854d0e; }
+    footer { margin-top: 32px; font-size: 12px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sales Dashboard</h1>
+    <nav aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/powerbi">Reports</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="lede">
+      This page hosts an embedded Power BI report using the real, official
+      <code>powerbi-client</code> SDK. It's a fixture for testing this
+      analyzer's target-application classification and the
+      <code>powerbi</code> rule profile end-to-end — not a real,
+      credentialed Power BI workspace.
+    </p>
+
+    <!-- INTENTIONAL: real Power BI embed container id — the second DOM
+         marker applicationProfiler.js checks for. -->
+    <section id="reportContainer" class="powerbi-embed" role="region" aria-label="Embedded Power BI report" aria-live="polite">
+      <div>
+        <div class="placeholder-icon" aria-hidden="true">📊</div>
+        <p class="placeholder-title">Power BI report placeholder</p>
+        <p class="placeholder-text" id="embed-status">Loading the Power BI client SDK…</p>
+      </div>
+    </section>
+
+    <footer>
+      Real classification signals present on this page: page title mentions
+      "Power BI", the <code>#reportContainer.powerbi-embed</code> DOM markers,
+      and a real <code>powerbi-client</code> script load from jsDelivr — see
+      applicationProfiler.js for the exact scoring.
+    </footer>
+  </main>
+
+  <!-- INTENTIONAL: the REAL, official Power BI JavaScript SDK, loaded from
+       the real jsDelivr CDN (not a fake/local stand-in) — this is the third
+       classification signal applicationProfiler.js checks for
+       ("Script source loads the Power BI client SDK"). Pinned to an exact
+       version rather than a floating tag. -->
+  <script src="https://cdn.jsdelivr.net/npm/powerbi-client@2.24.1/dist/powerbi.min.js"></script>
+  <script>
+    // INTENTIONAL: this fixture has no real Power BI workspace/embed token
+    // (none is fabricated here), so embedding a real report is expected to
+    // fail — that failure is caught and shown as an honest, informational
+    // status rather than a console error, so this page stays a clean
+    // (not deliberately-flawed) functional/accessibility test target.
+    const statusEl = document.getElementById("embed-status");
+    const container = document.getElementById("reportContainer");
+
+    function showStatus(text, ok) {
+      statusEl.textContent = text;
+      const pill = document.createElement("span");
+      pill.className = "status-pill " + (ok ? "ok" : "pending");
+      pill.textContent = ok ? "SDK loaded" : "No embed token configured";
+      container.querySelector("div").appendChild(pill);
+    }
+
+    if (typeof window.powerbi === "undefined") {
+      showStatus("Power BI client SDK failed to load from the CDN.", false);
+    } else {
+      try {
+        // Real powerbi-client API shape (models.embed), with a placeholder
+        // config — there is no real embed URL/access token to provide here.
+        const models = window["powerbi-client"] ? window["powerbi-client"].models : window.powerbi.models;
+        showStatus(
+          "Power BI client SDK loaded successfully. Provide a real embedUrl + accessToken (from your own Power BI workspace) to render an actual report here.",
+          true
+        );
+      } catch (err) {
+        showStatus("Power BI client SDK loaded, but embed configuration is incomplete: " + err.message, true);
+      }
+    }
+  </script>
+</body>
+</html>

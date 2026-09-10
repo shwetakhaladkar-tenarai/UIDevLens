@@ -27,11 +27,11 @@ export default function AnalysisLoading({ url }) {
   return (
     <div className="mx-auto max-w-md py-10 text-center" role="status" aria-live="polite">
       <div className="mb-6 flex justify-center">
-        <span className="h-14 w-14 animate-spin rounded-full border-4 border-gray-800 border-t-brand-500" aria-hidden="true" />
+        <span className="h-14 w-14 animate-spin rounded-full border-4 border-gray-200 border-t-brand-500" aria-hidden="true" />
       </div>
 
-      <h2 className="mb-1 text-lg font-semibold text-white">Analyzing</h2>
-      {url && <p className="mb-6 break-all text-sm text-brand-400">{url}</p>}
+      <h2 className="mb-1 text-lg font-semibold text-gray-900">Analyzing</h2>
+      {url && <p className="mb-6 break-all text-sm text-brand-600">{url}</p>}
 
       <ul className="space-y-2 text-left">
         {STEPS.map((label, i) => {
@@ -41,9 +41,8 @@ export default function AnalysisLoading({ url }) {
             <li
               key={label}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
-                active ? "bg-brand-500/10 text-white"
-                : done ? "text-gray-500"
-                : "text-gray-600 opacity-60"
+                active ? "bg-brand-50 text-gray-900"
+                : "text-gray-500"
               }`}
             >
               <span className="w-4 text-center" aria-hidden="true">
@@ -55,8 +54,8 @@ export default function AnalysisLoading({ url }) {
         })}
       </ul>
 
-      <p className="mt-6 text-xs text-gray-600">
-        A full analysis takes ~20-30 seconds (real browser, Lighthouse & axe-core).
+      <p className="mt-6 text-xs text-gray-500">
+        A full analysis takes ~20-30 seconds (real browser, Lighthouse &amp; axe-core).
       </p>
     </div>
   );

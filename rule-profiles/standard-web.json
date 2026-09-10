@@ -2,7 +2,6 @@
   "id": "web-ui-v1",
   "targetType": "standard-web",
   "description": "Default profile for ordinary web applications, marketing sites, and content pages. All checks enabled.",
-
   "enabledChecks": {
     "functional": true,
     "accessibility": true,
@@ -11,25 +10,45 @@
     "performance": true,
     "uiConsistency": true
   },
-
-  "browsers": ["chromium", "firefox", "webkit"],
-
+  "browsers": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
   "viewports": {
-    "desktop": { "width": 1440, "height": 900 },
-    "tablet":  { "width": 768,  "height": 1024 },
-    "mobile":  { "width": 390,  "height": 844 }
+    "desktop": {
+      "width": 1440,
+      "height": 900
+    },
+    "tablet": {
+      "width": 768,
+      "height": 1024
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844
+    }
   },
-
-  "accessibility": { "standard": "WCAG", "level": "AA" },
-
+  "accessibility": {
+    "standard": "WCAG",
+    "level": "AA"
+  },
   "performance": {
     "enabled": true,
     "loadTest": {
       "enabled": false,
       "approved": false,
-      "users": [10, 100, 500, 1000],
+      "users": [
+        10,
+        100,
+        500,
+        1000
+      ],
       "durationSeconds": 60,
-      "thresholds": { "p95ResponseTimeMs": 2000, "errorRatePercent": 1 }
+      "thresholds": {
+        "p95ResponseTimeMs": 2000,
+        "errorRatePercent": 1
+      }
     }
   }
 }

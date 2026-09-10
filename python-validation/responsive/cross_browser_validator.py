@@ -132,14 +132,11 @@ _COLLECT_JS = """
 # Finding helper
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _finding(finding_id: str, rule: str, severity: str, description: str,
+def _finding(finding_id: str, browser: str, rule: str, severity: str, description: str,
              recommendation: str, evidence: dict, confidence: float) -> dict:
     return {
         "id": finding_id,
-        # Category "responsive" (not a separate "cross_browser" bucket) —
-        # matches the Category enum used across this engine and the Node
-        # normalizer's known category buckets.
-        "category": "responsive",
+        "category": "cross-browser",
         "severity": severity,
         "title": rule,
         "description": description,
@@ -147,6 +144,7 @@ def _finding(finding_id: str, rule: str, severity: str, description: str,
         "evidence": evidence,
         "confidence": confidence,
         "source": "python-cross-browser",
+        "browser": browser,
     }
 
 
@@ -254,7 +252,7 @@ def _own_findings(browser_name: str, ev: dict, ref_name: str, ref_ev: dict) -> l
 
     def add(rule, severity, description, recommendation, evidence, confidence):
         counter[0] += 1
-        findings.append(_finding(f"cross-browser-{browser_name}-{counter[0]}", rule, severity, description, recommendation, evidence, confidence))
+        findings.append(_finding(f"cross-browser-{browser_name}-{counter[0]}", browser_name, rule, severity, description, recommendation, evidence, confidence))
 
     if ev.get("launchError"):
         add(
@@ -342,7 +340,7 @@ def _diff_findings(browser_name: str, ev: dict, ref_name: str, ref_ev: dict) -> 
 
     def add(rule, severity, description, recommendation, evidence, confidence):
         counter[0] += 1
-        findings.append(_finding(f"cross-browser-diff-{browser_name}-{counter[0]}", rule, severity, description, recommendation, evidence, confidence))
+        findings.append(_finding(f"cross-browser-diff-{browser_name}-{counter[0]}", browser_name, rule, severity, description, recommendation, evidence, confidence))
 
     dom = ev.get("dom") or {}
     ref_dom = ref_ev.get("dom") or {}
@@ -466,7 +464,7 @@ def validate(url: str, session=None, config=None, **_kwargs) -> ValidationResult
         return mock_result(
             check="cross_browser",
             source="cross_browser_validator",
-            category="responsive",
+            category="cross-browser",
             title="Cross-browser validation (mocked)",
             description=f"Would compare rendering of {url} across configured browsers ({_PLAYWRIGHT_IMPORT_ERROR}).",
             metrics={"mocked": True},

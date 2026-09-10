@@ -6,9 +6,10 @@
  * These tests spawn the REAL python-validation/runner.py to prove the
  * stdin/stdout JSON contract, timeout handling, invalid-JSON handling, and
  * exit-code handling all work end to end. They deliberately request only
- * "performance"/"design" (still mocked placeholders) so this suite stays
- * fast and network-independent — functional/accessibility/responsive/
- * cross_browser now launch real browsers and are covered by manual
+ * "performance" (the one check group that never needs a real browser session
+ * — see CHECKS_NEEDING_BROWSER in runner.py) so this suite stays fast and
+ * network-independent — functional/accessibility/responsive/cross_browser/
+ * design now all launch real browsers and are covered by manual
  * verification instead (see their READMEs).
  */
 import { test } from "node:test";
@@ -24,10 +25,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REAL_RUNNER = path.resolve(__dirname, "../../../python-validation/runner.py");
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Happy path — real mocked runner.py
+// Happy path — real runner.py
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("runPythonValidation resolves a structured result from the real (mocked) runner", async () => {
+test("runPythonValidation resolves a structured result from the real runner", async () => {
   const result = await runPythonValidation({
     url: "https://example.com",
     targetType: "standard-web",
@@ -37,11 +38,14 @@ test("runPythonValidation resolves a structured result from the real (mocked) ru
 
   assert.equal(result.status, "success");
   assert.ok(Array.isArray(result.findings));
-  assert.ok(result.findings.length > 0, "expected mocked findings to be returned");
-  assert.ok(result.findings.every((f) => f.mocked === true));
   assert.ok(Array.isArray(result.warnings));
   assert.ok(Array.isArray(result.errors));
   assert.equal(typeof result.metrics, "object");
+  // "performance" is real (load_benchmark.py), not mocked — but load testing
+  // is disabled by default, so it's still a fast, network-independent,
+  // deterministic result: no findings, and loadTest reports why it didn't run.
+  assert.equal(result.findings.length, 0);
+  assert.equal(result.metrics.performance?.loadTest?.executed, false);
 });
 
 test("runPythonValidation resolves status=error (not a rejection) for a missing url", async () => {

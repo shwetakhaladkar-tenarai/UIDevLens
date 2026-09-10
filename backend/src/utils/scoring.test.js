@@ -1,6 +1,6 @@
 /**
  * scoring.test.js
- * Unit tests for the deterministic scoring engine.
+ * Unit tests for the deterministic scoring engine (6-category model).
  * Run: npm test   (uses node --test)
  */
 import { test } from "node:test";
@@ -9,30 +9,32 @@ import assert from "node:assert/strict";
 import {
   computeScores,
   performanceScore,
-  designScore,
   accessibilityScore,
   overallScore,
   scoreFromFindings,
   penaltyFromFindings,
   scoreLabel,
+  CATEGORY_KEYS,
+  DEFAULT_WEIGHTS,
 } from "./scoring.js";
 
 const F = (severity, confidence = 1, id = "x") => ({ id, severity, confidence });
+const ALL_ENABLED = Object.fromEntries(CATEGORY_KEYS.map((k) => [k, true]));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Range guarantees
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("scores are always within 0..100", () => {
-  const empty = computeScores({});
-  for (const k of ["overall", "performance", "design", "accessibility"]) {
-    assert.ok(empty[k] >= 0 && empty[k] <= 100, `${k} in range`);
+test("all 6 categories + overall are within 0..100 when enabled", () => {
+  const r = computeScores({ enabledCategories: ALL_ENABLED });
+  for (const k of ["overall", ...CATEGORY_KEYS]) {
+    assert.equal(typeof r[k], "number", `${k} should be a number`);
+    assert.ok(r[k] >= 0 && r[k] <= 100, `${k} in range`);
   }
 });
 
 test("no findings + no anchors → perfect finding-derived scores", () => {
   assert.equal(scoreFromFindings([]), 100);
-  assert.equal(designScore({ designFindings: [], responsiveFindings: [] }), 100);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,12 +45,11 @@ test("hundreds of low-severity findings cannot push a score to zero", () => {
   const many = Array.from({ length: 500 }, () => F("low"));
   const score = scoreFromFindings(many);
   assert.ok(score > 0, `expected > 0, got ${score}`);
-  // low bucket cap is 15, so score should stay near 85
   assert.ok(score >= 80, `expected >= 80 due to bucket cap, got ${score}`);
 });
 
 test("per-severity bucket penalty is capped", () => {
-  const fewLows  = penaltyFromFindings([F("low"), F("low")]);            // 2 * 1.5 = 3
+  const fewLows  = penaltyFromFindings([F("low"), F("low")]);
   const manyLows = penaltyFromFindings(Array.from({ length: 100 }, () => F("low")));
   assert.ok(fewLows < manyLows, "more findings = more penalty (until cap)");
   assert.ok(manyLows <= 15 + 1e-9, `low bucket capped at 15, got ${manyLows}`);
@@ -79,78 +80,115 @@ test("confidence scales penalty down", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Lighthouse as a strong input
+// Lighthouse / axe as strong anchors
 // ─────────────────────────────────────────────────────────────────────────────
 
 test("Lighthouse score is a strong input to performance", () => {
-  // No findings, LH=50 → blended toward 50 (60% weight) but lifted by clean findings
-  const s = performanceScore({ lighthouseScore: 50, performanceFindings: [], networkFindings: [] });
+  const s = performanceScore({ lighthouseScore: 50, findings: [] });
   // 50*0.6 + 100*0.4 = 70
   assert.equal(Math.round(s), 70);
 });
 
 test("performance falls back to findings when Lighthouse unavailable", () => {
-  const s = performanceScore({ lighthouseScore: null, performanceFindings: [F("high")], networkFindings: [] });
-  // pure finding score: 100 - 10 = 90
-  assert.equal(Math.round(s), 90);
+  const s = performanceScore({ lighthouseScore: null, findings: [F("high")] });
+  assert.equal(Math.round(s), 90); // 100 - 10
 });
-
-test("network findings influence performance score", () => {
-  const withoutNet = performanceScore({ lighthouseScore: 100, performanceFindings: [], networkFindings: [] });
-  const withNet    = performanceScore({ lighthouseScore: 100, performanceFindings: [], networkFindings: [F("high"), F("high")] });
-  assert.ok(withNet < withoutNet, `network issues lower perf: ${withNet} < ${withoutNet}`);
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Responsive → design
-// ─────────────────────────────────────────────────────────────────────────────
-
-test("responsive findings influence design score", () => {
-  const clean     = designScore({ designFindings: [], responsiveFindings: [] });
-  const withResp  = designScore({ designFindings: [], responsiveFindings: [F("high"), F("critical")] });
-  assert.ok(withResp < clean, `responsive issues lower design: ${withResp} < ${clean}`);
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Accessibility axe anchor
-// ─────────────────────────────────────────────────────────────────────────────
 
 test("axe score is a strong input to accessibility", () => {
-  const s = accessibilityScore({ axeScore: 40, accessibilityFindings: [] });
+  const s = accessibilityScore({ axeScore: 40, findings: [] });
   // 40*0.6 + 100*0.4 = 64
   assert.equal(Math.round(s), 64);
 });
 
 test("accessibility falls back to findings when axe unavailable", () => {
-  const s = accessibilityScore({ axeScore: null, accessibilityFindings: [F("critical")] });
+  const s = accessibilityScore({ axeScore: null, findings: [F("critical")] });
   assert.equal(Math.round(s), 82); // 100 - 18
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Overall weighting 40/30/30
+// not-run categories
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("overall uses 40/30/30 weighting", () => {
-  const o = overallScore({ performance: 100, design: 0, accessibility: 0 });
-  assert.equal(o, 40);
-  const o2 = overallScore({ performance: 0, design: 100, accessibility: 0 });
-  assert.equal(o2, 30);
-  const o3 = overallScore({ performance: 0, design: 0, accessibility: 100 });
-  assert.equal(o3, 30);
+test("a disabled category returns {status:'not-run'} instead of a fake number", () => {
+  const r = computeScores({
+    enabledCategories: { ...ALL_ENABLED, crossBrowser: false, uiConsistency: false },
+  });
+  assert.deepEqual(r.crossBrowser, { status: "not-run" });
+  assert.deepEqual(r.uiConsistency, { status: "not-run" });
+  assert.equal(typeof r.functional, "number");
+  assert.equal(typeof r.overall, "number");
 });
+
+test("an unspecified category defaults to enabled (back-compat for simple callers)", () => {
+  const r = computeScores({});
+  for (const k of CATEGORY_KEYS) {
+    assert.equal(typeof r[k], "number", `${k} should default to enabled/scored`);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Overall: only enabled categories count, weights renormalized
+// ─────────────────────────────────────────────────────────────────────────────
+
+test("overall excludes not-run categories entirely (renormalizes remaining weights)", () => {
+  // Only functional (weight 0.25) and performance (weight 0.20) enabled/scored.
+  // Renormalized: functional contributes 0.25/0.45, performance 0.20/0.45.
+  const o = overallScore({ functional: 100, performance: 0 });
+  const expected = 100 * (0.25 / 0.45) + 0 * (0.20 / 0.45);
+  assert.ok(Math.abs(o - expected) < 0.5, `expected ~${expected}, got ${o}`);
+});
+
+test("overall with every category at 100 is 100 regardless of weights", () => {
+  const allHundred = Object.fromEntries(CATEGORY_KEYS.map((k) => [k, 100]));
+  assert.equal(Math.round(overallScore(allHundred)), 100);
+});
+
+test("overall falls back to a plain mean when no weights are configured for the enabled set", () => {
+  const o = overallScore({ functional: 80, performance: 40 }, {});
+  assert.equal(o, 60);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Configurable weights
+// ─────────────────────────────────────────────────────────────────────────────
+
+test("custom weights override DEFAULT_WEIGHTS", () => {
+  const customWeights = { functional: 1, accessibility: 0, responsive: 0, crossBrowser: 0, performance: 0, uiConsistency: 0 };
+  const r = computeScores({
+    enabledCategories: ALL_ENABLED,
+    weights: customWeights,
+    findingsByCategory: { functional: [], accessibility: [F("critical")], responsive: [], crossBrowser: [], performance: [], uiConsistency: [] },
+  });
+  // Only functional's weight is non-zero, and functional has no findings -> overall should be 100
+  // regardless of accessibility's critical finding.
+  assert.equal(r.overall, 100);
+});
+
+test("DEFAULT_WEIGHTS sum to 1", () => {
+  const sum = Object.values(DEFAULT_WEIGHTS).reduce((a, b) => a + b, 0);
+  assert.ok(Math.abs(sum - 1) < 1e-9, `expected weights to sum to 1, got ${sum}`);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Category composition (folding — verified via computeScores' findingsByCategory contract)
+// ─────────────────────────────────────────────────────────────────────────────
 
 test("computeScores returns the exact required shape", () => {
   const r = computeScores({
+    enabledCategories: ALL_ENABLED,
     lighthouseScore: 90,
     axeScore: 80,
-    performanceFindings: [F("medium")],
-    networkFindings: [F("low")],
-    designFindings: [F("high")],
-    responsiveFindings: [F("medium")],
-    accessibilityFindings: [F("critical")],
+    findingsByCategory: {
+      functional: [F("medium")],
+      accessibility: [F("critical")],
+      responsive: [F("medium")],
+      crossBrowser: [F("low")],
+      performance: [F("medium")],
+      uiConsistency: [F("high")],
+    },
   });
-  assert.deepEqual(Object.keys(r).sort(), ["accessibility", "design", "label", "overall", "performance"]);
-  for (const k of ["overall", "performance", "design", "accessibility"]) {
+  assert.deepEqual(Object.keys(r).sort(), ["accessibility", "crossBrowser", "functional", "label", "overall", "performance", "responsive", "uiConsistency"]);
+  for (const k of ["overall", ...CATEGORY_KEYS]) {
     assert.equal(typeof r[k], "number");
     assert.ok(Number.isInteger(r[k]), `${k} is integer`);
     assert.ok(r[k] >= 0 && r[k] <= 100);
@@ -175,15 +213,19 @@ test("scoreLabel thresholds", () => {
 
 test("realistic scenario produces sensible mid-range scores", () => {
   const r = computeScores({
+    enabledCategories: ALL_ENABLED,
     lighthouseScore: 76,
     axeScore: 84,
-    performanceFindings: [F("medium"), F("low")],
-    networkFindings: [F("medium")],
-    designFindings: [F("low"), F("low"), F("medium")],
-    responsiveFindings: [F("medium")],
-    accessibilityFindings: [F("low")],
+    findingsByCategory: {
+      functional: [F("low")],
+      accessibility: [F("low")],
+      responsive: [F("medium")],
+      crossBrowser: [F("low")],
+      performance: [F("medium"), F("low")],
+      uiConsistency: [F("low"), F("low"), F("medium")],
+    },
   });
-  for (const k of ["overall", "performance", "design", "accessibility"]) {
+  for (const k of ["overall", ...CATEGORY_KEYS]) {
     assert.ok(r[k] > 40 && r[k] <= 100, `${k}=${r[k]} is mid/high range`);
   }
 });

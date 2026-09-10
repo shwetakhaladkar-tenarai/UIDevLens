@@ -20,6 +20,34 @@ body {
 .site-header nav a { margin-right: 18px; color: #1a3fd8; text-decoration: none; }
 .icon-link .icon { font-size: 20px; }
 
+/* INTENTIONAL: icon-only button with NO accessible name (no text node, no
+   aria-label/aria-labelledby/title — see the <button> markup) AND an
+   undersized 24x24px tap target (below the 44px/40px minimum). Combined
+   fixture for wcag_validator.py's "unnamedButtons" check (WCAG 4.1.2) and
+   responsive_validator.py's small-tap-target check. */
+.icon-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin-right: 18px;
+  border: none;
+  border-radius: 4px;
+  background: #d1d5db;
+  color: #374151;
+  cursor: pointer;
+}
+
+/* INTENTIONAL: visible in Chromium/WebKit, hidden ONLY in Firefox via a
+   Firefox-only CSS feature query (-moz-appearance is recognized as a valid
+   property/value only by Gecko, so this @supports check is true only in
+   Firefox) — a controlled, deterministic, real browser-specific styling
+   difference. Fixture for cross_browser_validator.py's "control
+   missing/hidden in this browser" comparison finding. */
+.legacy-badge { color: #6b7280; font-size: 13px; }
+@supports (-moz-appearance: none) {
+  .legacy-badge { display: none; }
+}
+
 /* INTENTIONAL: oversized, unconstrained hero image */
 .hero-img { width: 100%; height: auto; }
 
@@ -61,5 +89,29 @@ body {
   padding: 20px;
   margin-top: 24px;
 }
+
+/* INTENTIONAL: fixed-height box with overflow:hidden clips its text content
+   (scrollHeight > clientHeight while overflow:hidden). Fixture for
+   responsive_validator.py / cross_browser_validator.py / designAnalyzer.js's
+   clipped-content detection. */
+.clipped-box {
+  height: 40px;
+  overflow: hidden;
+  padding: 8px;
+  margin-top: 24px;
+  background: #eef2ff;
+  line-height: 1.5;
+}
+
+/* INTENTIONAL: two controls deliberately overlap at every viewport size
+   (fixed pixel offset smaller than the button width, so it doesn't depend
+   on viewport width). Fixture for responsive_validator.py's
+   overlapping-elements detection. */
+.overlap-demo { position: relative; height: 70px; margin-top: 24px; }
+.overlap-demo h4 { margin: 0 0 8px; }
+.overlap-demo .overlap-a,
+.overlap-demo .overlap-b { position: absolute; top: 28px; }
+.overlap-demo .overlap-a { left: 0; }
+.overlap-demo .overlap-b { left: 24px; }
 
 .site-footer { margin-top: 40px; border-top: 1px solid #eee; padding-top: 12px; }

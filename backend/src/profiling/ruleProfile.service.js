@@ -23,8 +23,6 @@ export class RuleProfileError extends Error {
 const PROFILE_FILE_BY_TARGET_TYPE = {
   "standard-web": "standard-web.json",
   powerbi: "powerbi.json",
-  tableau: "tableau.json",
-  databricks: "databricks.json",
   unknown: "default.json",
 };
 
@@ -155,6 +153,28 @@ function loadAllProfiles() {
 }
 
 /**
+ * List every known rule profile (read-only) — the data source for the
+ * frontend's Rule Profiles page. Reuses loadAllProfiles' cache/validation
+ * rather than re-reading files; a profile that fails to load is still
+ * listed with its error message instead of silently disappearing, so a
+ * broken file is visible rather than just missing.
+ *
+ * @returns {Array<{targetType: string, filename: string, profile: object|null, error: string|null}>}
+ */
+export function listRuleProfiles() {
+  const profiles = loadAllProfiles();
+  return Object.entries(PROFILE_FILE_BY_TARGET_TYPE).map(([targetType, filename]) => {
+    const entry = profiles.get(filename);
+    return {
+      targetType,
+      filename,
+      profile: entry?.profile ?? null,
+      error: entry?.error ? entry.error.message : null,
+    };
+  });
+}
+
+/**
  * Select and validate the rule profile matching a target type. Falls back
  * to default.json for "unknown" or any type without a dedicated profile.
  *
@@ -170,6 +190,55 @@ export function selectRuleProfile(targetType) {
   }
   if (entry.error) throw entry.error;
   return entry.profile;
+}
+
+/**
+ * Apply a partial edit to a profile file on disk and re-validate the
+ * result (reusing the same validateProfile() every load goes through, so a
+ * saved edit can never leave a profile in a state the rest of the app
+ * wouldn't otherwise accept). Deliberately narrow: only enabledChecks,
+ * browsers, and accessibility.level are writable here — id/targetType
+ * (structural, used as cache/lookup keys), viewports, and
+ * performance.loadTest (requires its own explicit two-factor approval
+ * directly on the file, never via this API) are intentionally not exposed.
+ *
+ * @param {string} filename one of PROFILE_FILE_BY_TARGET_TYPE's values
+ * @param {{enabledChecks?:object, browsers?:string[], accessibility?:{level:string}}} updates
+ * @returns {object} the updated, validated profile
+ */
+export function updateRuleProfile(filename, updates) {
+  const filePath = path.join(config.ruleProfiles.dir, filename);
+
+  let raw;
+  try {
+    raw = fs.readFileSync(filePath, "utf-8");
+  } catch (err) {
+    throw new RuleProfileError(`Could not read rule profile file "${filePath}": ${err.message}`);
+  }
+
+  let current;
+  try {
+    current = JSON.parse(raw);
+  } catch (err) {
+    throw new RuleProfileError(`Rule profile file "${filename}" is not valid JSON: ${err.message}`);
+  }
+
+  const next = { ...current };
+  if (updates.enabledChecks) {
+    next.enabledChecks = { ...current.enabledChecks, ...updates.enabledChecks };
+  }
+  if (updates.browsers) {
+    next.browsers = updates.browsers;
+  }
+  if (updates.accessibility?.level) {
+    next.accessibility = { ...current.accessibility, level: updates.accessibility.level };
+  }
+
+  validateProfile(next, filename);
+
+  fs.writeFileSync(filePath, JSON.stringify(next, null, 2) + "\n", "utf-8");
+  profileCache = null; // force the next load to re-read this (and every other) file from disk
+  return next;
 }
 
 /**

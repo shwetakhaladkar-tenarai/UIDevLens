@@ -75,14 +75,20 @@ export const FrontendQualityState = Annotation.Root({
   // Raw metrics snapshot
   metrics: Annotation({ reducer: (_, b) => b, default: () => ({}) }),
 
-  // Scores object (replace on each write)
+  // Scores object (replace on each write). Six categories + overall — see
+  // scoring.js. A category not yet scored (e.g. before scoringNode runs, or
+  // if the pipeline short-circuits on a fatal error first) is {status:"not-run"}
+  // rather than a fake number.
   scores: Annotation({
     reducer: (_, b) => b,
     default: () => ({
       overall: 0,
-      performance: 0,
-      design: 0,
-      accessibility: 0,
+      functional:    { status: "not-run" },
+      accessibility: { status: "not-run" },
+      responsive:    { status: "not-run" },
+      crossBrowser:  { status: "not-run" },
+      performance:   { status: "not-run" },
+      uiConsistency: { status: "not-run" },
     }),
   }),
 

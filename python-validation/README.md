@@ -41,7 +41,7 @@ Or stdin:
 echo '{"url":"https://example.com","checks":["design"]}' | python runner.py
 ```
 
-Install (required for `functional` checks — they use real Chromium automation via Playwright; the other check groups are still mocked and need only the stdlib):
+Install (required for real results — `functional`, `accessibility`, `responsive`, `cross-browser`, and `design` all use real Chromium/Firefox/WebKit automation via Playwright; only `performance` (`load_benchmark.py`, pure HTTP load testing) needs just the stdlib. Without Playwright installed, every browser-driven module degrades to a mocked placeholder rather than crashing — see [Remaining mocked modules](#remaining-mocked-modules)):
 
 ```bash
 pip install -r requirements.txt
@@ -87,7 +87,29 @@ Optional `options` object: `timeout_ms`, `viewport_width`, `viewport_height`, `w
 
 `status` is `success`, `partial`, or `error`.
 
-Each finding includes `id`, `category`, `severity`, `title`, `description`, `evidence`, `recommendation`, `confidence`, `source`, and `mocked`.
+### Finding shape (expanded architecture)
+
+Every finding — from `common.models.Finding` (used directly by `mock_result`/`mock_finding` and `performance/load_benchmark.py`) or as an equivalent plain dict (every other real validator) — supports:
+
+```json
+{
+  "id": "",
+  "category": "functional|accessibility|responsive|cross-browser|performance|ui-consistency",
+  "severity": "critical|high|medium|low|info",
+  "title": "",
+  "description": "",
+  "evidence": {},
+  "confidence": 0.95,
+  "source": "",
+  "browser": null,
+  "viewport": null,
+  "standard": null,
+  "rule": null,
+  "threshold": null
+}
+```
+
+`browser`/`viewport`/`standard`/`rule`/`threshold` are `null` when not applicable to a given finding — populated by whichever validator actually knows them: `browser` by `cross_browser_validator.py`/`responsive_validator.py`, `viewport` by `responsive_validator.py`, `standard`/`rule` by `wcag_validator.py`, `threshold` by `load_benchmark.py`'s threshold-exceeded findings. `mocked: true` is also present (not shown above) on placeholder findings from still-mocked modules.
 
 ## Functional validation (real)
 
@@ -169,6 +191,8 @@ Per browser it collects page load status, console errors, failed requests, DOM d
 - *Absolute per-browser facts* — page load failures, HTTP errors, console/runtime errors, failed requests — reported for whichever browser(s) actually exhibit them. The per-browser structure itself IS the comparison: if every browser shares an issue, every browser's findings say so; if only one does, only that one's does.
 - *Comparison-only findings* — missing/hidden controls, horizontal overflow, clipped content, overlap, gross layout-height divergence — these are **not** inherently bugs in isolation (a page overflowing identically in all 3 browsers is a responsive-design issue, out of scope here). They're only raised when a browser disagrees with a Chromium baseline (or the first browser tested, if Chromium wasn't requested) — e.g. "control visible in Chromium but missing in Firefox", "horizontal overflow only appears in Firefox".
 
+Individual findings carry `category: "cross-browser"` (a category distinct from `"responsive"`) and a `browser` field naming exactly which engine the finding pertains to — e.g. `{"category": "cross-browser", "browser": "firefox", "title": "Control missing or hidden in this browser", ...}`.
+
 If the shared browser session (used by `functional`/`accessibility`) is already running, this module reuses its Playwright driver connection instead of starting a second one — Playwright's sync API only allows one per process. Degrades to its mocked placeholder if Playwright isn't installed at all.
 
 ## Responsive validation (real)
@@ -201,7 +225,7 @@ Same shared-driver-reuse and mocked-fallback behavior as the other real Playwrig
 
 ## Load benchmarking (real, opt-in only)
 
-`performance/load_benchmark.py` covers the second performance category — concurrent-user / load benchmarking — as a companion to the existing (still-mocked) `frontend_metrics.py` and the real, Lighthouse-based Node-side performance analysis (kept as-is; this doesn't touch it).
+`performance/load_benchmark.py` is the entirety of this engine's `performance` check group — concurrent-user / load benchmarking. Frontend browser performance (LCP/CLS/etc.) is deliberately NOT duplicated here: it's already covered for real by the Node-side Lighthouse analysis (`performanceAnalyzerNode`). An earlier `frontend_metrics.py` placeholder that always returned mocked data (never real) was removed rather than kept as permanent dead weight.
 
 **This sends real concurrent HTTP requests at the target and NEVER runs automatically.** It requires BOTH flags to be the literal boolean `true` in the selected rule profile's `performance.loadTest`:
 
@@ -260,8 +284,6 @@ Every finding uses `category: "ui-consistency"` — a category distinct from Nod
 
 ## Remaining mocked modules
 
-| Check | Modules |
-| --- | --- |
-| performance | `frontend_metrics.py` (frontend browser performance is already covered for real by the Node-side Lighthouse analyzer) |
+None. Every module in `CHECK_VALIDATORS` (`runner.py`) does real work whenever a real browser session is available — mocking only ever happens as a graceful fallback (no Playwright installed, or `session.mocked`), never as a module's sole behavior. Frontend browser performance (LCP/CLS/etc.) is intentionally not implemented here at all — it's already covered for real by the Node-side Lighthouse analyzer (`performanceAnalyzerNode`) — so there's no placeholder module standing in for it.
 
 Shared helpers: `common/models.py`, `common/browser.py`, `common/config.py`, `common/normalization.py`, `common/logger.py`, `common/http_check.py`, `common/safe_interaction.py`.

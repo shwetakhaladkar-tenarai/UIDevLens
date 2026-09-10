@@ -6,8 +6,8 @@ import { logger } from "../../utils/logger.js";
  * Analyzes visual design quality: contrast, typography, spacing, responsiveness.
  *
  * Conditional Tool Execution: skipped when validationPlannerNode's plan
- * didn't enable "uiConsistency" — e.g. the powerbi/tableau rule profiles,
- * where the embedded report's design isn't this application's to judge.
+ * didn't enable "uiConsistency" — e.g. the powerbi rule profile, where the
+ * embedded report's design isn't this application's to judge.
  */
 export async function designAnalyzerNode(state) {
   if (state.fatal) {

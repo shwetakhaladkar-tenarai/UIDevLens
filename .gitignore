@@ -59,3 +59,6 @@ dist-info/
 coverage/
 *.lcov
 .nyc_output/
+
+# Local user store (userStore.service.js) — hashed passwords, never committed
+backend/data/users.json

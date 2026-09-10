@@ -6,7 +6,7 @@
  *     -> validateInputNode           (Validate Request)
  *     -> browserCollectorNode        (Collect Initial Context)
  *     -> applicationProfilerNode     (Target/Application Profiler — deterministic
- *                                     standard-web | powerbi | tableau | databricks | unknown)
+ *                                     standard-web | powerbi | unknown)
  *     -> ruleProfileNode             (Rule Profile Selector — loads rule-profiles/*.json)
  *     -> validationPlannerNode       (Validation Planner — agentic: builds the concrete
  *                                     checks/browsers/viewports plan; rule profile is

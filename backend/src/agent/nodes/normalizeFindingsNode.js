@@ -22,10 +22,11 @@ function isResponsive(finding) {
 /**
  * Group the Python validation engine's flat findings list by category so
  * each one can be folded into the matching Node-side bucket. Python's
- * category values are: functional | accessibility | responsive | performance
- * | ui-consistency (cross_browser findings are emitted under "responsive";
- * design/ui_consistency.py's findings use "ui-consistency", a category
- * distinct from Node's own live "design" analyzer).
+ * category values are: functional | accessibility | responsive |
+ * cross-browser | performance | ui-consistency (design/ui_consistency.py's
+ * findings use "ui-consistency", a category distinct from Node's own live
+ * "design" analyzer; responsive/cross_browser_validator.py's findings use
+ * "cross-browser", distinct from "responsive").
  */
 function groupByCategory(findings) {
   const groups = {};
@@ -61,6 +62,7 @@ export async function normalizeFindingsNode(state) {
     accessibility: [...(state.accessibilityFindings ?? []), ...(pythonByCategory.accessibility ?? [])],
     functional:    pythonByCategory.functional ?? [],
     uiConsistency: pythonByCategory["ui-consistency"] ?? [],
+    crossBrowser:  pythonByCategory["cross-browser"] ?? [],
   });
 
   logger.info("[normalizeFindingsNode] Done", {
@@ -72,6 +74,7 @@ export async function normalizeFindingsNode(state) {
     accessibility: (state.accessibilityFindings ?? []).length,
     pythonValidation: (state.pythonValidationResults?.findings ?? []).length,
     uiConsistency: (pythonByCategory["ui-consistency"] ?? []).length,
+    crossBrowser:  (pythonByCategory["cross-browser"] ?? []).length,
   });
 
   return { normalizedFindings };

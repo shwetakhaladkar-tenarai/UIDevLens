@@ -16,8 +16,17 @@
     <nav>
       <!-- INTENTIONAL: link with no accessible name (icon only, no aria-label) -->
       <a href="#" class="icon-link"><span class="icon">☰</span></a>
+      <!-- INTENTIONAL: icon-only button with NO accessible name (empty of
+           text, no aria-label) AND an undersized 24x24px tap target — see
+           .icon-btn in styles.css for the full explanation. -->
+      <button class="icon-btn" id="icon-only-btn" type="button">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><rect width="12" height="12" fill="currentColor"/></svg>
+      </button>
       <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
+      <!-- INTENTIONAL: hidden only in Firefox — see .legacy-badge in
+           styles.css for the full explanation. -->
+      <a href="#" class="legacy-badge" id="legacy-badge-link">Legacy badge</a>
     </nav>
   </header>
 
@@ -69,6 +78,18 @@
     This block is 1200px wide and causes horizontal scrolling on mobile.
   </div>
 
+  <!-- INTENTIONAL: fixed-height box clips this paragraph's text -->
+  <div class="clipped-box">
+    This paragraph is intentionally much longer than the fixed-height container that holds it, so a meaningful amount of this sentence is cut off and completely inaccessible to the reader without any indication that more content exists below the visible edge.
+  </div>
+
+  <!-- INTENTIONAL: two controls deliberately overlap — see .overlap-demo in styles.css -->
+  <section id="overlap-demo" class="overlap-demo">
+    <h4>Account Actions</h4>
+    <button class="btn btn-primary overlap-a" type="button">Save</button>
+    <button class="btn btn-secondary overlap-b" type="button">Discard</button>
+  </section>
+
   <!-- INTENTIONAL: fixtures for the Python functional validators
        (functional/links.py, buttons.py, forms.py, navigation.py) -->
   <section id="functional-demo" class="functional-demo">
@@ -109,7 +130,11 @@
       <button type="submit" class="btn btn-primary">Send message</button>
     </form>
 
-    <!-- INTENTIONAL: never resolves/hides -> stuck loading state fixture -->
+    <!-- INTENTIONAL: missing error state — the "widget stats" request this
+         spinner represents (see app.js) fails, but no error message is ever
+         shown to the user; the spinner is just left stuck forever instead
+         of surfacing the failure. Fixture for functional/states.py's
+         stuck-loading detector. -->
     <div class="loading-spinner" aria-busy="true">Loading widget stats…</div>
 
     <!-- INTENTIONAL: visible on initial load with no user action -> unexpected default error state -->

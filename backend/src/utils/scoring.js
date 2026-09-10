@@ -1,20 +1,42 @@
 /**
  * scoring.js
- * Deterministic 0-100 scoring. The LLM never calculates or overrides these.
+ * Deterministic 0-100 scoring. The LLM never calculates or overrides these
+ * — computeScores() is pure arithmetic over factual findings/anchors.
  *
- * Category composition:
- *   performance   ← Lighthouse score (strong anchor) + performance & NETWORK findings
- *   design        ← design findings + RESPONSIVE findings
- *   accessibility ← axe-core score (if available) + accessibility findings
+ * Six category scores + overall, matching the expanded architecture:
+ *   functional     ← Python functional findings (links/buttons/forms/nav/console/states)
+ *   accessibility  ← axe-core score (strong anchor, if available) + accessibility findings
+ *                    (Node axe-core + Python wcag_validator, merged)
+ *   responsive     ← responsive findings (Node design-analyzer overflow/tap-targets
+ *                    split + Python responsive_validator)
+ *   crossBrowser   ← Python cross_browser_validator findings
+ *   performance    ← Lighthouse score (strong anchor, if available) + performance
+ *                    & network findings
+ *   uiConsistency  ← Node design-analyzer findings + Python ui_consistency findings
  *
- * Overall = weighted average: performance 40%, design 30%, accessibility 30%.
+ * A category that was NOT enabled by the validation plan is never scored —
+ * it returns {status:"not-run"} rather than a fake number, and is excluded
+ * (not just zero-weighted) from the overall-score calculation, whose
+ * remaining weights are renormalized to sum to 1.
  *
- * Penalty model (capped so noise cannot zero a score):
+ * Weights are configurable — pass `weights` to override DEFAULT_WEIGHTS
+ * (e.g. from a rule profile's optional `scoring.weights`).
+ *
+ * Penalty model (unchanged, capped so noise cannot zero a score):
  *   - Each finding contributes a per-severity penalty.
  *   - Penalty per severity BUCKET is capped (diminishing returns), so hundreds
  *     of low findings cannot drive a score to 0.
  *   - Total finding penalty is also globally capped per category.
  */
+
+export const CATEGORY_KEYS = [
+  "functional",
+  "accessibility",
+  "responsive",
+  "crossBrowser",
+  "performance",
+  "uiConsistency",
+];
 
 // ── Per-finding severity penalties ────────────────────────────────────────────
 const SEVERITY_PENALTY = {
@@ -45,7 +67,19 @@ const ANCHOR_BLEND = {
   accessibility: 0.6,   // 60% axe score,        40% finding-derived
 };
 
-const OVERALL_WEIGHTS = { performance: 0.4, design: 0.3, accessibility: 0.3 };
+// ── Default (configurable) overall-score weights ───────────────────────────────
+// Sum to 1.0. A caller (scoringNode, from a rule profile's optional
+// `scoring.weights`) may override any subset; missing keys fall back to these.
+export const DEFAULT_WEIGHTS = {
+  functional:    0.25,
+  accessibility: 0.20,
+  responsive:    0.15,
+  crossBrowser:  0.10,
+  performance:   0.20,
+  uiConsistency: 0.10,
+};
+
+const NOT_RUN = Object.freeze({ status: "not-run" });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Penalty calculation
@@ -89,116 +123,115 @@ export function scoreFromFindings(findings = []) {
   return clampScore(100 - penaltyFromFindings(findings));
 }
 
+/** Blend an authoritative external anchor (Lighthouse/axe) with a finding-derived score. */
+function blendWithAnchor(anchorScore, findingScore, weight) {
+  if (anchorScore == null || isNaN(anchorScore)) return findingScore;
+  const anchor = clampScore(anchorScore);
+  return clampScore(anchor * weight + findingScore * (1 - weight));
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Category scores
+// Category scores (kept as named exports — useful standalone, e.g. in tests)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Performance score: Lighthouse anchor (if available) blended with performance+network findings. */
+export function performanceScore({ lighthouseScore = null, findings = [] } = {}) {
+  return blendWithAnchor(lighthouseScore, scoreFromFindings(findings), ANCHOR_BLEND.performance);
+}
+
+/** Accessibility score: axe-core anchor (if available) blended with accessibility findings. */
+export function accessibilityScore({ axeScore = null, findings = [] } = {}) {
+  return blendWithAnchor(axeScore, scoreFromFindings(findings), ANCHOR_BLEND.accessibility);
+}
+
+// functional / responsive / crossBrowser / uiConsistency have no external
+// anchor — they're purely finding-derived. scoreFromFindings() covers them.
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Overall — weighted average over ONLY the enabled categories, renormalized
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Performance score.
- * Blends the Lighthouse score (strong anchor) with a finding-derived score
- * computed from performance + network findings.
+ * Weighted overall score across whichever categories actually produced a
+ * numeric score. Categories missing from `numericScores` (i.e. not-run) are
+ * excluded entirely — the remaining weights are renormalized to sum to 1,
+ * not just left to under-count toward a lower ceiling.
  *
- * @param {object}  args
- * @param {number|null} args.lighthouseScore  0..100 (or null if unavailable)
- * @param {Array}   args.performanceFindings
- * @param {Array}   args.networkFindings       network issues influence performance
+ * @param {Record<string, number>} numericScores  category -> 0..100 (only enabled/run categories)
+ * @param {Record<string, number>} [weights]       category -> weight (defaults to DEFAULT_WEIGHTS)
  * @returns {number} 0..100
  */
-export function performanceScore({ lighthouseScore = null, performanceFindings = [], networkFindings = [] }) {
-  const findingScore = scoreFromFindings([...performanceFindings, ...networkFindings]);
+export function overallScore(numericScores = {}, weights = DEFAULT_WEIGHTS) {
+  const entries = Object.entries(numericScores).filter(([, v]) => typeof v === "number");
+  if (!entries.length) return 0;
 
-  if (lighthouseScore == null || isNaN(lighthouseScore)) {
-    // No anchor — rely entirely on findings.
-    return findingScore;
+  const totalWeight = entries.reduce((sum, [cat]) => sum + (weights[cat] ?? 0), 0);
+  if (totalWeight <= 0) {
+    // No weights configured for any enabled category — fall back to a plain mean
+    // rather than divide by zero.
+    return clampScore(entries.reduce((sum, [, v]) => sum + v, 0) / entries.length);
   }
 
-  const lh = clampScore(lighthouseScore);
-  const w  = ANCHOR_BLEND.performance;
-  return clampScore(lh * w + findingScore * (1 - w));
-}
-
-/**
- * Design score.
- * Combines design findings + responsive findings (responsive influences design).
- *
- * @param {object} args
- * @param {Array}  args.designFindings
- * @param {Array}  args.responsiveFindings   responsive issues influence design
- * @returns {number} 0..100
- */
-export function designScore({ designFindings = [], responsiveFindings = [] }) {
-  return scoreFromFindings([...designFindings, ...responsiveFindings]);
-}
-
-/**
- * Accessibility score.
- * Blends the axe-core score (strong anchor) with a finding-derived score.
- *
- * @param {object} args
- * @param {number|null} args.axeScore  0..100 (or null if unavailable)
- * @param {Array}  args.accessibilityFindings
- * @returns {number} 0..100
- */
-export function accessibilityScore({ axeScore = null, accessibilityFindings = [] }) {
-  const findingScore = scoreFromFindings(accessibilityFindings);
-
-  if (axeScore == null || isNaN(axeScore)) {
-    return findingScore;
-  }
-
-  const axe = clampScore(axeScore);
-  const w   = ANCHOR_BLEND.accessibility;
-  return clampScore(axe * w + findingScore * (1 - w));
+  const weighted = entries.reduce((sum, [cat, v]) => sum + clampScore(v) * (weights[cat] ?? 0), 0);
+  return clampScore(weighted / totalWeight);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Overall + orchestration
+// Orchestration
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Weighted overall score: performance 40%, design 30%, accessibility 30%.
- * @param {{performance:number, design:number, accessibility:number}} c
- * @returns {number} 0..100
- */
-export function overallScore({ performance, design, accessibility }) {
-  const score =
-    clampScore(performance)   * OVERALL_WEIGHTS.performance +
-    clampScore(design)        * OVERALL_WEIGHTS.design +
-    clampScore(accessibility) * OVERALL_WEIGHTS.accessibility;
-  return clampScore(score);
-}
-
-/**
- * Compute the full deterministic score bundle from analyzer state.
- * This is the single entry point used by scoringNode.
+ * Compute the full deterministic score bundle. Single entry point used by
+ * scoringNode. Only include a category's findings if it's the appropriate
+ * shape — see CATEGORY_KEYS for the 6 supported categories.
  *
  * @param {object} input
- * @param {number|null} input.lighthouseScore
- * @param {number|null} input.axeScore
- * @param {Array} input.performanceFindings
- * @param {Array} input.networkFindings
- * @param {Array} input.designFindings
- * @param {Array} input.responsiveFindings
- * @param {Array} input.accessibilityFindings
- * @returns {{overall:number, performance:number, design:number, accessibility:number, label:string}}
+ * @param {Record<string, boolean>} [input.enabledCategories]  category -> whether the
+ *   validation plan enabled it. A category missing here (or `undefined`) is
+ *   treated as enabled by default (back-compat for simple callers); only an
+ *   EXPLICIT `false` marks it not-run.
+ * @param {Record<string, number>}  [input.weights]  overrides DEFAULT_WEIGHTS (configurable)
+ * @param {number|null} [input.lighthouseScore]
+ * @param {number|null} [input.axeScore]
+ * @param {Record<string, Array>} [input.findingsByCategory]  category -> findings[]
+ * @returns {{overall:number, functional:number|{status:"not-run"}, accessibility:number|{status:"not-run"}, responsive:number|{status:"not-run"}, crossBrowser:number|{status:"not-run"}, performance:number|{status:"not-run"}, uiConsistency:number|{status:"not-run"}, label:string}}
  */
 export function computeScores(input = {}) {
   const {
+    enabledCategories = {},
+    weights = DEFAULT_WEIGHTS,
     lighthouseScore = null,
     axeScore = null,
-    performanceFindings = [],
-    networkFindings = [],
-    designFindings = [],
-    responsiveFindings = [],
-    accessibilityFindings = [],
+    findingsByCategory = {},
   } = input;
 
-  const performance = Math.round(performanceScore({ lighthouseScore, performanceFindings, networkFindings }));
-  const design      = Math.round(designScore({ designFindings, responsiveFindings }));
-  const accessibility = Math.round(accessibilityScore({ axeScore, accessibilityFindings }));
-  const overall     = Math.round(overallScore({ performance, design, accessibility }));
+  const result = {};
+  const numeric = {};
 
-  return { overall, performance, design, accessibility, label: scoreLabel(overall) };
+  for (const category of CATEGORY_KEYS) {
+    const enabled = enabledCategories[category] !== false;
+    if (!enabled) {
+      result[category] = NOT_RUN;
+      continue;
+    }
+
+    const findings = findingsByCategory[category] ?? [];
+    let score;
+    if (category === "performance") {
+      score = performanceScore({ lighthouseScore, findings });
+    } else if (category === "accessibility") {
+      score = accessibilityScore({ axeScore, findings });
+    } else {
+      score = scoreFromFindings(findings);
+    }
+
+    result[category] = Math.round(score);
+    numeric[category] = result[category];
+  }
+
+  result.overall = Math.round(overallScore(numeric, weights));
+  result.label = scoreLabel(result.overall);
+  return result;
 }
 
 /**

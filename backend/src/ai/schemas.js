@@ -19,10 +19,14 @@ export const PrioritizedIssueSchema = z.object({
 
 // ── Full AI analysis ──────────────────────────────────────────────────────────
 export const AiAnalysisSchema = z.object({
-  executiveSummary:  z.string(),
-  prioritizedIssues: z.array(PrioritizedIssueSchema),
-  quickWins:         z.array(z.string()),
-  recommendations:   z.array(z.string()),
+  executiveSummary:     z.string(),
+  majorRisks:           z.array(z.string()),
+  prioritizedIssues:    z.array(PrioritizedIssueSchema),
+  crossBrowserSummary:  z.string(),
+  accessibilitySummary: z.string(),
+  performanceSummary:   z.string(),
+  quickWins:            z.array(z.string()),
+  recommendations:      z.array(z.string()),
 });
 
 /**
@@ -92,9 +96,12 @@ function coerceLenient(obj) {
   const enumOrMedium = (v) => (["low", "medium", "high"].includes(lc(v)) ? lc(v) : "medium");
 
   const issues = Array.isArray(o.prioritizedIssues) ? o.prioritizedIssues : [];
+  const strArr = (v) => (Array.isArray(v) ? v.filter((s) => typeof s === "string") : []);
+  const str    = (v) => (typeof v === "string" ? v : "");
 
   return {
-    executiveSummary:  typeof o.executiveSummary === "string" ? o.executiveSummary : "",
+    executiveSummary:     str(o.executiveSummary),
+    majorRisks:           strArr(o.majorRisks),
     prioritizedIssues: issues.map((it, idx) => ({
       findingId:       typeof it?.findingId === "string" ? it.findingId : "",
       priority:        Number.isInteger(it?.priority) ? it.priority : idx + 1,
@@ -104,8 +111,11 @@ function coerceLenient(obj) {
       impact:          enumOrMedium(it?.impact),
       effort:          enumOrMedium(it?.effort),
     })),
-    quickWins:       Array.isArray(o.quickWins)       ? o.quickWins.filter((s) => typeof s === "string")       : [],
-    recommendations: Array.isArray(o.recommendations) ? o.recommendations.filter((s) => typeof s === "string") : [],
+    crossBrowserSummary:  str(o.crossBrowserSummary),
+    accessibilitySummary: str(o.accessibilitySummary),
+    performanceSummary:   str(o.performanceSummary),
+    quickWins:            strArr(o.quickWins),
+    recommendations:      strArr(o.recommendations),
   };
 }
 

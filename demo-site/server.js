@@ -8,6 +8,11 @@
  *   /big-image.png    a large, unoptimized PNG generated on the fly
  *   /api/products     fast JSON (fetched multiple times by app.js -> duplicate)
  *   /api/slow         intentionally slow (~2.5s) JSON response
+ *   /powerbi          Power BI embed fixture (see powerbi.html) — real
+ *                     powerbi-client SDK + real Power BI DOM markers, for
+ *                     exercising applicationProfiler.js's "powerbi"
+ *                     classification and rule-profiles/powerbi.json
+ *                     end-to-end without needing real Power BI credentials
  *
  * Run:  node server.js   (defaults to port 4173)
  */
@@ -26,6 +31,8 @@ const STATIC = {
   "/styles.css":  { file: "styles.css", type: "text/css; charset=utf-8" },
   "/app.js":      { file: "app.js",     type: "text/javascript; charset=utf-8" },
   "/unused.js":   { file: "unused.js",  type: "text/javascript; charset=utf-8" },
+  "/powerbi":     { file: "powerbi.html", type: "text/html; charset=utf-8" },
+  "/powerbi.html": { file: "powerbi.html", type: "text/html; charset=utf-8" },
 };
 
 /** Build a large, deliberately unoptimized PNG (~solid image, big dimensions). */

@@ -10,14 +10,22 @@ No validation behavior is hardcoded in the application — every analyzer
 enabled checks, browsers, viewports, and thresholds from the selected
 profile.
 
+**Editing.** `enabledChecks`, `browsers`, and `accessibility.level` can be
+changed directly on disk (edit the JSON, see [Schema](#schema) below) **or**
+through the app's Rule Profiles page (`PATCH /api/rule-profiles/:filename`,
+`backend/src/profiling/ruleProfile.service.js`'s `updateRuleProfile()`) — both
+paths go through the same `validateProfile()` before anything is written, and
+the file is re-read fresh on the next analysis run either way. `id`,
+`targetType`, `viewports`, and `performance.loadTest` are deliberately **not**
+editable through the API (only by hand, directly on the file) — see the load
+benchmarking note below for why that last one matters.
+
 ## Selection
 
 | targetType     | Profile file          |
 |----------------|------------------------|
 | `standard-web` | `standard-web.json`    |
 | `powerbi`      | `powerbi.json`         |
-| `tableau`      | `tableau.json`         |
-| `databricks`   | `databricks.json`      |
 | `unknown` (or anything unrecognized) | `default.json` |
 
 ## Schema
@@ -56,9 +64,22 @@ profile.
       "durationSeconds": 60,
       "thresholds": { "p95ResponseTimeMs": 2000, "errorRatePercent": 1 }
     }
+  },
+
+  "scoring": {
+    "weights": {
+      "functional": 0.25,
+      "accessibility": 0.20,
+      "responsive": 0.15,
+      "crossBrowser": 0.10,
+      "performance": 0.20,
+      "uiConsistency": 0.10
+    }
   }
 }
 ```
+
+`scoring.weights` is optional (defaults to `DEFAULT_WEIGHTS` in `backend/src/utils/scoring.js` — the values shown above — when omitted) and lets a profile emphasize different categories in the overall score for its target type. Only the weights of categories the plan actually enabled are used; scoringNode renormalizes them to sum to 1, so a partial override (e.g. just `{"performance": 0.5}`) is safe — missing keys fall back to the defaults.
 
 `ruleProfile.service.js` validates every field on load (missing/invalid
 fields raise `RuleProfileError`) and rejects any `targetType` that isn't one

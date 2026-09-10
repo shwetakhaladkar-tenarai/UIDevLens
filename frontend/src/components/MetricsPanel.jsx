@@ -2,13 +2,13 @@ import React from "react";
 
 /**
  * Threshold-based tone. `lowerIsBetter` metrics turn green below `good`,
- * yellow up to `warn`, red beyond.
+ * amber up to `warn`, red beyond.
  */
 function tone(value, good, warn) {
   if (value == null) return "text-gray-400";
-  if (value <= good) return "text-green-400";
-  if (value <= warn) return "text-yellow-400";
-  return "text-red-400";
+  if (value <= good) return "text-green-600";
+  if (value <= warn) return "text-amber-600";
+  return "text-red-600";
 }
 
 function fmtMs(v)    { return v == null ? "—" : `${Math.round(v).toLocaleString()} ms`; }
@@ -22,10 +22,10 @@ function fmtBytes(v) {
 
 function Metric({ label, value, tone: t, hint }) {
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
+    <div className="rounded-xl border border-gray-200 bg-white p-4">
       <p className="text-xs text-gray-500">{label}</p>
       <p className={`mt-1 text-xl font-bold ${t}`}>{value}</p>
-      {hint && <p className="mt-0.5 text-[11px] text-gray-600">{hint}</p>}
+      {hint && <p className="mt-0.5 text-[11px] text-gray-500">{hint}</p>}
     </div>
   );
 }
@@ -39,9 +39,9 @@ export default function MetricsPanel({ metrics = {} }) {
 
   return (
     <section aria-labelledby="metrics-heading">
-      <h2 id="metrics-heading" className="mb-4 text-base font-semibold text-white">
+      <h3 id="metrics-heading" className="mb-4 text-sm font-semibold text-gray-900">
         Core Web Vitals
-      </h2>
+      </h3>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Metric label="LCP" value={fmtMs(lcp)} tone={tone(lcp, 2500, 4000)} hint="≤ 2.5 s good" />

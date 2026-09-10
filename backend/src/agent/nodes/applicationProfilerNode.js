@@ -4,9 +4,9 @@ import { logger } from "../../utils/logger.js";
 /**
  * Node — applicationProfilerNode
  * Target/Application Profiler: deterministically classifies what kind of
- * web-accessible application was just collected (standard-web, powerbi,
- * tableau, databricks, or unknown) BEFORE rule-profile selection and
- * validation run. Never calls OpenAI — see profiling/applicationProfiler.js.
+ * web-accessible application was just collected (standard-web, powerbi, or
+ * unknown) BEFORE rule-profile selection and validation run. Never calls
+ * OpenAI — see profiling/applicationProfiler.js.
  *
  * Runs once, right after browserCollectorNode, so its output (targetProfile)
  * is available to every downstream analyzer — most importantly the future
