@@ -1,6 +1,6 @@
 /**
- * demo-site/server.js
- * Zero-dependency static + API server for the intentionally-flawed demo site.
+ * fixture-site/server.js
+ * Zero-dependency static + API server for the intentionally-flawed fixture site.
  *
  * Serves:
  *   /                 index.html
@@ -23,7 +23,7 @@ import path from "path";
 import zlib from "zlib";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = parseInt(process.env.DEMO_PORT || "4173", 10);
+const PORT = parseInt(process.env.FIXTURE_PORT || "4173", 10);
 
 const STATIC = {
   "/":            { file: "index.html", type: "text/html; charset=utf-8" },
@@ -148,6 +148,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`[demo-site] running at http://localhost:${PORT}`);
-  console.log(`[demo-site] APIs: /api/products (duplicate), /api/slow (~2.5s), /big-image.png (oversized)`);
+  console.log(`[fixture-site] running at http://localhost:${PORT}`);
+  console.log(`[fixture-site] APIs: /api/products (duplicate), /api/slow (~2.5s), /big-image.png (oversized)`);
 });

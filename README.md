@@ -22,7 +22,7 @@ AI-Powered/
 │   └── data/users.json  # Local user store (gitignored — created on first register)
 ├── rule-profiles/       # Editable validation profiles (rule-profiles/*.json)
 ├── python-validation/   # Deterministic Python validation engine
-├── demo-site/           # Static demo target site (incl. a Power BI fixture)
+├── fixture-site/        # Static test-target site (incl. a Power BI fixture)
 ├── .env.example         # Environment template
 ├── .gitignore
 └── README.md
@@ -62,18 +62,18 @@ Visit [http://localhost:5173](http://localhost:5173) — you'll land on `/login`
 There's no seeded account: click **Create one** to register, which logs you in
 immediately. See [Authentication](#authentication) below.
 
-### 5. (Optional) Analyze the local demo site
+### 5. (Optional) Analyze the local fixture site
 
 The SSRF validator blocks `localhost` targets by default. To analyze
-`demo-site/`, start the backend with the dev-only escape hatch instead:
+`fixture-site/`, start the backend with the dev-only escape hatch instead:
 
 ```bash
 cd backend
 ALLOW_LOCAL_TARGETS=true npm run dev
 ```
 
-Then run the demo site itself and analyze `http://localhost:4173` from
-**New Audit Run** (see [demo-site/README.md](demo-site/README.md), which also
+Then run the fixture site itself and analyze `http://localhost:4173` from
+**New Audit Run** (see [fixture-site/README.md](fixture-site/README.md), which also
 documents a `/powerbi` fixture for exercising the Power BI classification path).
 
 ### 6. (Optional) Useful dev scripts

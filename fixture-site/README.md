@@ -1,20 +1,20 @@
-# Flawed Demo Site
+# Flawed Fixture Site
 
 A deliberately broken website used to prove the analyzer detects real issues.
 
 ## Run it
 
 ```bash
-cd demo-site
+cd fixture-site
 node server.js            # serves http://localhost:4173
-# optional: DEMO_PORT=5000 node server.js
+# optional: FIXTURE_PORT=5000 node server.js
 ```
 
 No dependencies — plain Node.js.
 
 ## Analyze it (development only)
 
-The production SSRF rules **block localhost**. To analyze the local demo site,
+The production SSRF rules **block localhost**. To analyze the local fixture site,
 start the backend with the dev-only escape hatch enabled:
 
 ```bash

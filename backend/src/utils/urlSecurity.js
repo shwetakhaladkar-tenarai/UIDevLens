@@ -5,7 +5,7 @@
  *
  * A DEV-ONLY escape hatch (config.allowLocalTargets, set via
  * ALLOW_LOCAL_TARGETS=true) permits localhost/loopback/private targets so the
- * bundled demo-site can be analyzed locally. Production defaults keep full
+ * bundled fixture-site can be analyzed locally. Production defaults keep full
  * protection — the escape hatch never weakens the default behaviour.
  */
 import { config } from "../config/env.js";

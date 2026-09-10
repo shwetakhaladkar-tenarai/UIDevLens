@@ -13,7 +13,7 @@ export const config = {
     model: process.env.OPENAI_MODEL || "gpt-4o",
   },
   // DEV-ONLY escape hatch. When true, the SSRF validator permits localhost /
-  // loopback / private targets so the local demo-site can be analyzed.
+  // loopback / private targets so the local fixture-site can be analyzed.
   // MUST stay false in production. Never weaken the default.
   allowLocalTargets: process.env.ALLOW_LOCAL_TARGETS === "true",
 
