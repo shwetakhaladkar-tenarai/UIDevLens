@@ -4,13 +4,13 @@ import {
 } from "recharts";
 import ScoreCard from "./ScoreCard.jsx";
 
-const CATEGORIES = [
-  { key: "functional",    label: "Functional UI" },
-  { key: "accessibility", label: "Accessibility / WCAG" },
-  { key: "responsive",    label: "Responsiveness" },
-  { key: "crossBrowser",  label: "Cross-Browser" },
-  { key: "performance",   label: "Performance" },
-  { key: "uiConsistency", label: "UI Consistency" },
+export const SCORE_CATEGORIES = [
+  { key: "functional",    label: "Functional UI",        panel: "functional" },
+  { key: "accessibility", label: "Accessibility / WCAG", panel: "accessibility" },
+  { key: "responsive",    label: "Responsiveness",       panel: "responsive" },
+  { key: "crossBrowser",  label: "Cross-Browser",        panel: "cross-browser" },
+  { key: "performance",   label: "Performance",          panel: "performance" },
+  { key: "uiConsistency", label: "UI Consistency",       panel: "ui-consistency" },
 ];
 
 function isNumber(v) {
@@ -18,17 +18,18 @@ function isNumber(v) {
 }
 
 /**
- * Score overview: an overall gauge plus one gauge per validation category
- * (functional/accessibility/responsive/crossBrowser/performance/uiConsistency),
- * plus a radar chart comparing whichever categories actually ran (Recharts —
- * useful here for at-a-glance shape comparison). A category the validation
- * plan didn't enable is {status:"not-run"} — its gauge renders muted and it's
+ * Score overview: an overall gauge plus one clickable gauge per validation
+ * category. Clicking a category card opens its detail panel below (handled
+ * by the parent via onCategoryClick). The active category is highlighted.
+ *
+ * Also renders a radar chart comparing whichever categories actually ran.
+ * A category the validation plan didn't enable is {status:"not-run"} —
  * excluded from the radar chart entirely rather than plotted as a fake 0.
  */
-export default function ScoreOverview({ scores = {} }) {
+export default function ScoreOverview({ scores = {}, activePanel = null, onCategoryClick }) {
   const { overall = 0, label } = scores;
 
-  const radarData = CATEGORIES
+  const radarData = SCORE_CATEGORIES
     .filter((c) => isNumber(scores[c.key]))
     .map((c) => ({ axis: c.label, value: scores[c.key] }));
 
@@ -42,9 +43,18 @@ export default function ScoreOverview({ scores = {} }) {
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Gauges */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          {/* Overall — not clickable */}
           <ScoreCard label="Overall" score={overall} primary />
-          {CATEGORIES.map((c) => (
-            <ScoreCard key={c.key} label={c.label} score={scores[c.key]} />
+
+          {/* Category cards — each opens its detail panel */}
+          {SCORE_CATEGORIES.map((c) => (
+            <ScoreCard
+              key={c.key}
+              label={c.label}
+              score={scores[c.key]}
+              active={activePanel === c.panel}
+              onClick={() => onCategoryClick?.(c.panel)}
+            />
           ))}
         </div>
 
@@ -71,6 +81,10 @@ export default function ScoreOverview({ scores = {} }) {
           </div>
         </div>
       </div>
+
+      {onCategoryClick && (
+        <p className="mt-3 text-xs text-gray-400 text-center">Click a category score to view its detail panel below.</p>
+      )}
     </section>
   );
 }

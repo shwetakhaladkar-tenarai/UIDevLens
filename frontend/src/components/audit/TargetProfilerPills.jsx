@@ -16,7 +16,7 @@ const TYPES = [
 export default function TargetProfilerPills({ detectedType }) {
   return (
     <div>
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Target Profiler Type</p>
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Target App Type</p>
       <div className="flex flex-wrap gap-2" role="list" aria-label="Detected application type">
         {TYPES.map((t) => {
           const isDetected = detectedType === t.key;

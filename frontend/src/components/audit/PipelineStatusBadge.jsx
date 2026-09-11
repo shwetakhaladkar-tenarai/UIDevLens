@@ -15,9 +15,9 @@ const STATE = {
 export default function PipelineStatusBadge({ state = "idle" }) {
   const s = STATE[state] ?? STATE.idle;
   return (
-    <div className="flex items-center gap-2 min-w-0">
-      <Badge color={s.color}>Pipeline: {s.label}</Badge>
-      <span className="truncate text-sm text-gray-500">{s.description}</span>
+    <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+      <Badge color={s.color}>Analysis: {s.label}</Badge>
+      <span className="truncate text-sm text-gray-500 hidden sm:block">{s.description}</span>
     </div>
   );
 }

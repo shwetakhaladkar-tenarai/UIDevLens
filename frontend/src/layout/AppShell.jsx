@@ -12,9 +12,9 @@ export default function AppShell() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-      <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+      <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
         <Outlet context={{ openMobileNav: () => setMobileNavOpen(true) }} />
       </div>
     </div>

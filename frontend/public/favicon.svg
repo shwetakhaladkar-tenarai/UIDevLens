@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Background circle -->
+  <rect width="32" height="32" rx="8" fill="#4f46e5"/>
+  <!-- Magnifying glass circle -->
+  <circle cx="13.5" cy="13.5" r="6.5" stroke="white" stroke-width="2.2"/>
+  <!-- Magnifying glass handle -->
+  <line x1="18.5" y1="18.5" x2="25" y2="25" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- Small spark / AI tick inside the glass -->
+  <path d="M11 13.5h2.5v-2" stroke="#a5f3fc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="13.5" cy="13.5" r="1" fill="#a5f3fc"/>
+</svg>

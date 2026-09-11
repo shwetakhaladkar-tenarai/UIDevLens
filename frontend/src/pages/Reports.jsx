@@ -126,9 +126,9 @@ export default function Reports() {
         }
       />
 
-      <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+      <main className="w-full space-y-6 px-4 py-6 sm:px-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Validation Reports &amp; Historical Runs</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Audit History &amp; Reports</h1>
           <p className="mt-1 text-sm text-gray-500">
             Local history of runs completed in this browser. There's no shared/server-side run store yet — see{" "}
             <a href="#local-history-note" className="underline decoration-gray-300">note below</a>.
@@ -139,7 +139,7 @@ export default function Reports() {
           <Card className="p-4">
             <p className="text-xs text-gray-500">Total Validations</p>
             <p className="mt-1 text-2xl font-bold text-gray-900">{summary.total}</p>
-            <p className="mt-1 text-xs text-gray-500">Across {summary.targetTypeCount} target profiler{summary.targetTypeCount === 1 ? "" : "s"}</p>
+            <p className="mt-1 text-xs text-gray-500">Across {summary.targetTypeCount} target types{summary.targetTypeCount === 1 ? "" : "s"}</p>
           </Card>
           <Card className="p-4">
             <p className="text-xs text-gray-500">Avg. Quality Score</p>
@@ -189,10 +189,10 @@ export default function Reports() {
                 <TableHead>
                   <tr>
                     <TableHeaderCell>Timestamp</TableHeaderCell>
-                    <TableHeaderCell>Target URL &amp; Profiler</TableHeaderCell>
+                    <TableHeaderCell>Target URL &amp; Type</TableHeaderCell>
                     <TableHeaderCell>Scores Summary</TableHeaderCell>
                     <TableHeaderCell>Findings</TableHeaderCell>
-                    <TableHeaderCell>Pipeline Status</TableHeaderCell>
+                    <TableHeaderCell>Analysis Status</TableHeaderCell>
                     <TableHeaderCell>Actions</TableHeaderCell>
                   </tr>
                 </TableHead>

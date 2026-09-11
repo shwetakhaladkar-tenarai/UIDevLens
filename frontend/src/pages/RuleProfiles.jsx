@@ -64,12 +64,12 @@ export default function RuleProfiles() {
     <>
       <TopBar
         onMenuClick={openMobileNav}
-        left={<h1 className="text-sm font-semibold text-gray-900">Validation Rule Profiles</h1>}
+        left={null}
       />
 
-      <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+      <main className="w-full space-y-6 px-4 py-6 sm:px-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Validation Rule Profiles</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Validation Rules Configuration</h2>
           <p className="mt-1 text-sm text-gray-500">
             Real profiles from <code className="rounded bg-gray-100 px-1 py-0.5 text-xs text-gray-700">rule-profiles/*.json</code>.
             Edits here write straight to that file and take effect on the next analysis run. Profile name, target type,
@@ -85,7 +85,7 @@ export default function RuleProfiles() {
             {/* Preset list */}
             <Card className="p-4 h-fit">
               <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-semibold text-gray-900">Preset Rule Profiles</p>
+                <p className="text-sm font-semibold text-gray-900">Standard Rules</p>
                 <Badge color="blue">{profiles.filter((p) => p.profile).length} Presets</Badge>
               </div>
               <div className="space-y-2">

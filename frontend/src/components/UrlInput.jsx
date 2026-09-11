@@ -66,37 +66,45 @@ export default function UrlInput({ value, onValueChange, onAnalyze, analyzing, f
 
   return (
     <form id={formId} onSubmit={submit} noValidate className="w-full">
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1">
-          <label htmlFor="url" className="sr-only">Website URL</label>
-          <input
-            id="url"
-            type="url"
-            list={datalistId}
-            value={value}
-            onChange={(e) => { onValueChange(e.target.value); if (error) setError(""); }}
-            placeholder="https://your-website.com"
-            disabled={analyzing}
-            aria-invalid={!!error}
-            aria-describedby={error ? "url-error" : undefined}
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/40 disabled:opacity-50"
-          />
-          <datalist id={datalistId}>
-            {recentUrls.map((u) => <option key={u} value={u} />)}
-          </datalist>
-        </div>
+      {/* Input + button joined as one unit */}
+      <div className={`flex items-stretch rounded-lg border bg-white transition-colors ${error ? "border-red-400 focus-within:ring-2 focus-within:ring-red-400/40" : "border-gray-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/40"}`}>
+        <label htmlFor="url" className="sr-only">Website URL</label>
+        <input
+          id="url"
+          type="url"
+          list={datalistId}
+          value={value}
+          onChange={(e) => { onValueChange(e.target.value); if (error) setError(""); }}
+          placeholder="https://your-website.com"
+          disabled={analyzing}
+          aria-invalid={!!error}
+          aria-describedby={error ? "url-error" : undefined}
+          className="min-w-0 flex-1 rounded-l-lg bg-transparent px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none disabled:opacity-50"
+        />
+        <datalist id={datalistId}>
+          {recentUrls.map((u) => <option key={u} value={u} />)}
+        </datalist>
         {!hideSubmitButton && (
           <button
             type="submit"
             disabled={analyzing}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-r-lg border-l border-gray-300 bg-brand-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {analyzing ? (
               <>
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
                 Analyzing…
               </>
-            ) : "Analyze"}
+            ) : (
+              <>
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+                  <circle cx="8.5" cy="8.5" r="5" />
+                  <path d="M13 13L17 17" strokeLinecap="round" />
+                  <path d="M8.5 6.5v2H10.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Analyze
+              </>
+            )}
           </button>
         )}
       </div>

@@ -5,7 +5,7 @@ import { useAuth } from "../state/AuthContext.jsx";
 const NAV_ITEMS = [
   {
     to: "/audit",
-    label: "New Audit Run",
+    label: "Dashboard",
     icon: (
       <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
         <path d="M4 8.5 10 3l6 5.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -27,7 +27,7 @@ const NAV_ITEMS = [
   },
   {
     to: "/rule-profiles",
-    label: "Rule Profiles",
+    label: "Rule Manager",
     icon: (
       <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
         <circle cx="10" cy="10" r="7" />
@@ -57,7 +57,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-gray-200 bg-white transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-gray-200 bg-white transition-transform lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -65,7 +65,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">
             AI
           </div>
-          <span className="text-sm font-semibold text-gray-900">Quality Agent</span>
+          <span className="text-sm font-semibold text-gray-900">Smart UI Auditor</span>
         </div>
 
         <nav className="flex-1 space-y-1 p-3" aria-label="Main">
