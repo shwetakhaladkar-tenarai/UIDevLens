@@ -4,7 +4,7 @@ import { useAuth } from "../state/AuthContext.jsx";
 
 const NAV_ITEMS = [
   {
-    to: "/audit",
+    to: "/dashboard",
     label: "Dashboard",
     icon: (
       <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
@@ -14,7 +14,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    to: "/reports",
+    to: "/reports-and-history",
     label: "Reports & History",
     icon: (
       <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
@@ -26,7 +26,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    to: "/rule-profiles",
+    to: "/rule-manager",
     label: "Rule Manager",
     icon: (
       <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">

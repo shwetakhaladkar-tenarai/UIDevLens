@@ -15,9 +15,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Already signed in — go straight to wherever they were headed (or /audit).
+  // Already signed in — go straight to wherever they were headed (or /dashboard).
   if (!loading && user) {
-    return <Navigate to={location.state?.from?.pathname ?? "/audit"} replace />;
+    return <Navigate to={location.state?.from?.pathname ?? "/dashboard"} replace />;
   }
 
   async function handleSubmit(e) {
@@ -26,7 +26,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       await login(email.trim(), password);
-      navigate(location.state?.from?.pathname ?? "/audit", { replace: true });
+      navigate(location.state?.from?.pathname ?? "/dashboard", { replace: true });
     } catch (err) {
       setError(err.message || "Login failed. Please try again.");
     } finally {

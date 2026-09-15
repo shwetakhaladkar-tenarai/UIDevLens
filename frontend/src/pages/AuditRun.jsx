@@ -100,10 +100,20 @@ export default function AuditRun() {
 
   const [activeTab, setActiveTab]       = useState("overview");
   const [activePanel, setActivePanel]   = useState(null); // which category panel is open
-  const tabsRef   = useRef(null);
-  const panelRefs = useRef({}); // keyed by panel id
+  const tabsRef    = useRef(null);
+  const panelRefs  = useRef({}); // keyed by panel id
+  const loadingRef = useRef(null); // scroll target when analysis starts
 
   const pipelineState = analyzing ? "running" : error ? "error" : report ? "done" : "idle";
+
+  // Scroll the loading card into view just below the topbar when analysis starts.
+  useEffect(() => {
+    if (analyzing && loadingRef.current) {
+      const topbarHeight = 64; // h-16
+      const top = loadingRef.current.getBoundingClientRect().top + window.scrollY - topbarHeight - 16;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  }, [analyzing]);
 
   // Reset to overview whenever a new run completes.
   useEffect(() => {
@@ -164,9 +174,6 @@ export default function AuditRun() {
         left={<PipelineStatusBadge state={pipelineState} />}
         right={
           <>
-            <Link to="/rule-profiles">
-              <Button variant="secondary" size="sm">Standard Rules</Button>
-            </Link>
             {analyzing ? (
               <Button variant="danger" size="sm" onClick={resetAll}>✕ Cancel Run</Button>
             ) : (report || error) ? (
@@ -203,21 +210,33 @@ export default function AuditRun() {
           </div>
         </Card>
 
-        {/* 02 — Rule Profile & Validation Matrix */}
-        <Card as="section" aria-labelledby="matrix-heading" className="p-5">
-          <SectionHeader
-            id="matrix-heading"
-            step="02"
-            title="Validation Rules & Matrix"
-            status={<Badge color="blue">Validation Engine</Badge>}
-          />
-          <ValidationMatrixCards checks={validationPlan.checks} />
-        </Card>
-
         {/* Execution states */}
         {analyzing && (
-          <Card className="p-5">
+          <Card ref={loadingRef} className="p-5">
             <AnalysisLoading url={pendingUrl} />
+          </Card>
+        )}
+
+        {/* 02 — Rule Profile & Validation Matrix */}
+        {!analyzing && (
+          <Card as="section" aria-labelledby="matrix-heading" className="p-5">
+            <SectionHeader
+              id="matrix-heading"
+              step="02"
+              title="Validation Rules & Matrix"
+              action={
+                <Link
+                  to="/rule-manager"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-3.5 w-3.5">
+                    <path d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5Z" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Edit Rule
+                </Link>
+              }
+            />
+            <ValidationMatrixCards checks={validationPlan.checks} />
           </Card>
         )}
 
@@ -359,15 +378,7 @@ export default function AuditRun() {
                   </CategorySection>
                 </div>
 
-                {/* Warnings — shown at the bottom after all detail panels */}
-                {warnings.length > 0 && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                    <p className="mb-2 text-sm font-medium text-amber-800">Analysis warnings</p>
-                    {warnings.map((w, i) => (
-                      <p key={i} className="text-xs text-amber-700">{w}</p>
-                    ))}
-                  </div>
-                )}
+                {/* Warnings hidden */}
               </div>
             )}
 

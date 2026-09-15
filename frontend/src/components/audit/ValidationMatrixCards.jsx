@@ -1,15 +1,5 @@
 import React from "react";
 
-/**
- * Five cards summarizing what the real validation plan (built by
- * validationPlannerNode from the selected rule profile — see
- * metadata.validationPlan) enabled for this run. Each item's checkmark
- * reflects the real per-category enabled flag from `validationPlan.checks`;
- * the backend doesn't expose finer-than-category granularity, so items
- * within a card share that category's state rather than inventing one.
- * Before any run, everything renders neutral (no plan exists yet) rather
- * than a fake "all enabled" guess.
- */
 const CARDS = [
   {
     title: "Functional UI",
@@ -38,21 +28,33 @@ const CARDS = [
   },
 ];
 
+/** Green check, red X, or neutral dash depending on enabled state. */
 function CheckIcon({ enabled }) {
+  // Pre-run — neutral, no plan yet
   if (enabled === null) {
-    return <span aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-sm border border-gray-300 bg-white" />;
+    return (
+      <span aria-hidden="true" className="mt-0.5 shrink-0 text-gray-300 text-sm leading-none">—</span>
+    );
   }
-  return enabled ? (
-    <svg aria-hidden="true" viewBox="0 0 14 14" className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-sm bg-brand-600 text-white">
-      <path d="M3 7.2 5.8 10 11 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+
+  // Enabled — green checkmark
+  if (enabled) {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 16 16" className="mt-0.5 h-4 w-4 shrink-0 text-green-500">
+        <path d="M3 8.5 6.5 12 13 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  // Disabled — red X
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" className="mt-0.5 h-4 w-4 shrink-0 text-red-400">
+      <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
-  ) : (
-    <span aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-sm border border-gray-300 bg-gray-100" />
   );
 }
 
 export default function ValidationMatrixCards({ checks }) {
-  // No plan yet (pre-run): every card is neutral (null), not a fake guess.
   const cardEnabled = (checkKeys) => {
     if (!checks) return null;
     return checkKeys.some((k) => checks[k] === true);

@@ -33,12 +33,12 @@ export default function App() {
                 </AuditRunProvider>
               }
             >
-              <Route index element={<Navigate to="/audit" replace />} />
-              <Route path="audit" element={<AuditRun />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="rule-profiles" element={<RuleProfiles />} />
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<AuditRun />} />
+              <Route path="reports-and-history" element={<Reports />} />
+              <Route path="rule-manager" element={<RuleProfiles />} />
               <Route path="profile" element={<Profile />} />
-              <Route path="*" element={<Navigate to="/audit" replace />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Route>
         </Routes>

@@ -17,7 +17,7 @@ export default function Register() {
   const [submitting, setSubmitting] = useState(false);
 
   if (!loading && user) {
-    return <Navigate to="/audit" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   async function handleSubmit(e) {
@@ -36,7 +36,7 @@ export default function Register() {
     setSubmitting(true);
     try {
       await register(email.trim(), password, name.trim());
-      navigate("/audit", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err.message || "Registration failed. Please try again.");
     } finally {

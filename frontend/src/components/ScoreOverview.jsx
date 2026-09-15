@@ -37,7 +37,15 @@ export default function ScoreOverview({ scores = {}, activePanel = null, onCateg
     <section aria-labelledby="scores-heading">
       <div className="mb-4 flex items-baseline justify-between">
         <h2 id="scores-heading" className="text-base font-semibold text-gray-900">Overall Score</h2>
-        {label && <span className="text-sm text-gray-500">{label}</span>}
+        {label && (
+          <span className={`text-sm font-semibold ${
+            overall >= 90 ? "text-green-600" :
+            overall >= 75 ? "text-emerald-600" :
+            overall >= 60 ? "text-amber-600" :
+            overall >= 40 ? "text-orange-600" :
+            "text-red-600"
+          }`}>{label}</span>
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
