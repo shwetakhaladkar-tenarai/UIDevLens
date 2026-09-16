@@ -4,52 +4,50 @@ const STEPS = [
   {
     label: "Validating URL & Profiling Target",
     detail: "Detecting app type and selecting rule profile",
-    duration: 600,
+    duration: 800,
   },
   {
     label: "Collecting Browser Evidence",
     detail: "Launching Chromium, Firefox & WebKit across desktop, tablet, mobile",
-    duration: 7000,
+    duration: 12000,
   },
   {
     label: "Performance Audit",
     detail: "Running Lighthouse — LCP, CLS, FCP, TBT, Speed Index",
-    duration: 5000,
+    duration: 10000,
   },
   {
     label: "Accessibility Checks",
     detail: "axe-core WCAG scan + keyboard & focus validation",
-    duration: 4000,
+    duration: 8000,
   },
   {
     label: "UI Consistency & Design",
     detail: "Checking colors, typography, spacing & component consistency",
-    duration: 3000,
+    duration: 6000,
   },
   {
     label: "Functional & Network Analysis",
     detail: "Broken links, form inputs, navigation & network requests",
-    duration: 3000,
+    duration: 6000,
   },
   {
     label: "AI Reasoning & Scoring",
     detail: "GPT-4o prioritizing findings and generating recommendations",
-    duration: 5000,
+    duration: 10000,
   },
   {
     label: "Building Report",
     detail: "Assembling final scores, insights and findings",
-    duration: 2000,
+    duration: 6000,
   },
 ];
 
-// Cumulative delay for each step to start
+// Cumulative start time for each step
 const START_TIMES = STEPS.reduce((acc, s, i) => {
   acc.push(i === 0 ? 0 : acc[i - 1] + STEPS[i - 1].duration);
   return acc;
 }, []);
-
-const TOTAL_DURATION = START_TIMES[START_TIMES.length - 1] + STEPS[STEPS.length - 1].duration;
 
 function StepIcon({ state }) {
   if (state === "done") {
@@ -79,42 +77,54 @@ function StepIcon({ state }) {
 /**
  * Rich step-by-step progress indicator shown while the analysis runs.
  * Steps advance on an estimated schedule (backend doesn't stream events).
+ * Progress bar is driven by step index — each step = one equal slice —
+ * and is capped at 95% so it never falsely claims completion.
  */
 export default function AnalysisLoading({ url }) {
   const [step, setStep] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
+  // Track progress within the current step using a fine-grained ticker
+  const [subProgress, setSubProgress] = useState(0);
 
   // Advance steps on their estimated schedule
   useEffect(() => {
     const timers = START_TIMES.map((t, i) =>
-      setTimeout(() => setStep(i), t)
+      setTimeout(() => {
+        setStep(i);
+        setSubProgress(0); // reset sub-progress when a new step starts
+      }, t)
     );
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // Tick elapsed time every 200ms for the progress bar
+  // Within each step, tick sub-progress from 0→1 over that step's duration
   useEffect(() => {
-    const start = Date.now();
-    const id = setInterval(() => setElapsed(Date.now() - start), 200);
+    const stepDuration = STEPS[step]?.duration ?? 1000;
+    const tickMs = 200;
+    const increment = tickMs / stepDuration;
+    const id = setInterval(() => {
+      setSubProgress((prev) => Math.min(1, prev + increment));
+    }, tickMs);
     return () => clearInterval(id);
-  }, []);
+  }, [step]);
 
-  const progress = Math.min(100, Math.round((elapsed / TOTAL_DURATION) * 100));
+  // Each step contributes an equal slice; within the step we interpolate
+  // smoothly. Cap at 95% — only the real report completion reaches 100%.
+  const sliceSize = 100 / STEPS.length;
+  const rawProgress = step * sliceSize + subProgress * sliceSize;
+  const progress = Math.min(95, Math.round(rawProgress));
+
   const currentStep = STEPS[step];
 
   return (
     <div className="w-full py-6 px-2" role="status" aria-live="polite">
       {/* Header */}
-      <div className="mb-5 flex items-start gap-4">
-        <span className="mt-1 h-10 w-10 shrink-0 animate-spin rounded-full border-4 border-gray-100 border-t-brand-500" aria-hidden="true" />
-        <div className="min-w-0">
-          <h2 className="text-base font-semibold text-gray-900">Analyzing your application…</h2>
-          {url && (
-            <a href={url} target="_blank" rel="noopener noreferrer" className="mt-0.5 block truncate text-sm text-brand-600 hover:underline">
-              {url}
-            </a>
-          )}
-        </div>
+      <div className="mb-5">
+        <h2 className="text-base font-semibold text-gray-900">Analyzing your application…</h2>
+        {url && (
+          <a href={url} target="_blank" rel="noopener noreferrer" className="mt-0.5 block truncate text-sm text-brand-600 hover:underline">
+            {url}
+          </a>
+        )}
       </div>
 
       {/* Progress bar */}

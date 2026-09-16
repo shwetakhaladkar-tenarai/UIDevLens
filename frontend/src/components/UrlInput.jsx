@@ -91,10 +91,7 @@ export default function UrlInput({ value, onValueChange, onAnalyze, analyzing, f
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-r-lg border-l border-gray-300 bg-brand-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {analyzing ? (
-              <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
-                Analyzing…
-              </>
+              <>Analyzing…</>
             ) : (
               <>
                 <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
