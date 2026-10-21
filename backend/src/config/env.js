@@ -73,7 +73,16 @@ if (!config.openai.apiKey) {
 }
 
 if (config.auth.jwtSecret === "dev-insecure-secret-change-me") {
+  if (config.nodeEnv === "production") {
+    console.error(
+      "[config] FATAL: JWT_SECRET must be set to a real random value in production. " +
+        "Generate one with: node -e \"console.log(require('crypto').randomBytes(48).toString('hex'))\"" +
+        "\nRefusing to start with an insecure default in production."
+    );
+    process.exit(1);
+  }
   console.warn(
-    "[config] JWT_SECRET is not set — using an insecure default. Set JWT_SECRET in .env before deploying anywhere beyond local dev."
+    "[config] JWT_SECRET is not set — using an insecure default. " +
+      "Set JWT_SECRET in .env before deploying anywhere beyond local dev."
   );
 }

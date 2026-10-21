@@ -1,11 +1,23 @@
 # Deterministic Python validation engine.
-# Do not add OpenAI / LangChain / any LLM client here.
+# Do not add OpenAI / LangChain / any LLM client here — all AI reasoning
+# is handled on the Node.js side (aiReasoningNode.js).
 
-# Required for functional/*, accessibility/wcag_validator.py, and
-# responsive/cross_browser_validator.py (real browser automation).
-# After installing, also run once:
+# Required for all validator modules:
+#   functional/*
+#   accessibility/wcag_validator.py
+#   responsive/responsive_validator.py
+#   responsive/cross_browser_validator.py
+#   design/ui_consistency.py
+#   performance/load_benchmark.py
+#
+# After installing, run once to download browser binaries:
 #   python -m playwright install chromium firefox webkit
+#   # On Linux also install system dependencies:
+#   python -m playwright install-deps
 playwright>=1.40.0
 
-# responsive/responsive_validator.py, performance/, design/ are still
-# mocked placeholders and need no extra packages yet.
+# HTTP client used by load_benchmark.py for concurrent load testing.
+aiohttp>=3.9.0
+
+# Used by several validators for structured data handling.
+dataclasses-json>=0.6.0
